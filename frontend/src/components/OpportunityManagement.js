@@ -1264,9 +1264,10 @@ const OpportunityManagement = () => {
                               
                               <div className="flex items-center space-x-4">
                                 <div className="text-right text-sm">
-                                  <div className="font-medium">OTP: ${quotation.calculated_otp?.toLocaleString() || '0'}</div>
-                                  <div className="text-gray-500">Recurring: ${quotation.calculated_recurring?.toLocaleString() || '0'}/mo</div>
-                                  <div className="font-medium text-blue-600">Total: ${quotation.calculated_grand_total?.toLocaleString() || '0'}</div>
+                                  <div className="font-medium">OTP: ${(quotation.calculated_otp || quotation.total_otp || 0).toLocaleString()}</div>
+                                  <div className="text-gray-500">Recurring: ${(quotation.calculated_recurring || quotation.total_year1 || 0).toLocaleString()}/mo</div>
+                                  <div className="text-gray-500">Total Tenure: ${(quotation.calculated_tenure_recurring || quotation.total_recurring || 0).toLocaleString()}</div>
+                                  <div className="font-medium text-blue-600">Grand Total: ${(quotation.calculated_grand_total || quotation.grand_total || 0).toLocaleString()}</div>
                                 </div>
                                 
                                 <div className="flex items-center space-x-2">
