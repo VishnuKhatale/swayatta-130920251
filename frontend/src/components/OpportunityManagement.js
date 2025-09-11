@@ -1207,9 +1207,9 @@ const OpportunityManagement = () => {
                     </Button>
                   )}
 
-                  {!getNextStage() && (
+                  {['L6', 'L7', 'L8'].includes(currentStage) && (
                     <Button
-                      onClick={() => saveStageData(false)}
+                      onClick={() => completeFinalStage()}
                       disabled={saving}
                       className="bg-green-600 hover:bg-green-700"
                     >
