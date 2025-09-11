@@ -200,15 +200,17 @@ const OpportunityManagement = () => {
       case 'L7': // Lost
         return [
           { name: 'lost_reason', label: 'Lost Reason', type: 'select', options: [
-            { id: 'price', name: 'Price' },
-            { id: 'competitor', name: 'Competitor' },
-            { id: 'technical', name: 'Technical' },
-            { id: 'timeline', name: 'Timeline' }
+            { id: 'Price Too High', name: 'Price Too High' },
+            { id: 'Lost to Competitor', name: 'Lost to Competitor' },
+            { id: 'Budget Constraints', name: 'Budget Constraints' },
+            { id: 'Timeline Mismatch', name: 'Timeline Mismatch' },
+            { id: 'Technical Requirements', name: 'Technical Requirements' },
+            { id: 'Other', name: 'Other' }
           ], required: true },
-          { name: 'competitor', label: 'Competitor', type: 'text' },
-          { name: 'followup_reminder', label: 'Follow-up Reminder', type: 'date' },
-          { name: 'internal_learnings', label: 'Internal Learnings', type: 'textarea' },
-          { name: 'escalation_flag', label: 'Escalation Flag', type: 'checkbox' }
+          { name: 'competitor', label: 'Competitor', type: 'text', requiredIf: { field: 'lost_reason', value: 'Lost to Competitor' } },
+          { name: 'followup_reminder', label: 'Follow-Up Reminder', type: 'date', defaultValue: '+6months' },
+          { name: 'internal_learnings', label: 'Internal Learnings', type: 'textarea', maxLength: 1000 },
+          { name: 'escalation_flag', label: 'Escalation Flag', type: 'checkbox', conditional: true }
         ];
       
       case 'L8': // Dropped
