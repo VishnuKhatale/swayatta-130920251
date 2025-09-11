@@ -526,6 +526,9 @@ backend:
       - working: "NA"
         agent: "main"
         comment: "Phase 2 Frontend Implementation COMPLETED - Successfully implemented quotation status management, L4 enhanced UI, L5 stage gating, L6-L8 stage forms with admin role gating, and Complete Final Stage functionality. Frontend compiling successfully without errors. Ready for manual testing by user."
+      - working: "NA"
+        agent: "main"
+        comment: "CRITICAL FIXES APPLIED based on user feedback: 1) L4 List + Navigation: Fixed quotation save to redirect to L4 with optimistic quotation display, updated Back button to return to opportunity's L4 stage instead of global listing, enhanced quotation display with proper totals from multiple data sources. 2) L5 Commercial Decision: Added role-gated Commercial Decision field (Won/Reject) for Admin/Sales Manager/Commercial Approver only, implemented decision-based navigation (Won→L6, Reject→L7), added Save & Continue button showing target stage, updated field visibility for non-authorized users. Frontend compiling successfully, ready for testing."
     endpoints_tested:
       - "GET /api/products/catalog - Product Catalog for Quotation Items (✅ Working)"
       - "GET /api/master/currencies - Currency Master Data (✅ Working)"
