@@ -10982,16 +10982,18 @@ async def submit_quotation(quotation_id: str, current_user: User = Depends(get_c
         if not quotation:
             raise HTTPException(status_code=404, detail="Quotation not found")
         
-        if quotation["status"] != "draft":
-            raise HTTPException(status_code=400, detail="Only draft quotations can be submitted")
+        if quotation["status"] != "Draft":
+            raise HTTPException(status_code=400, detail="Only Draft quotations can be submitted")
         
-        # Update status to submitted
+        # Update status to Unapproved
         await db.quotations.update_one(
             {"id": quotation_id},
             {"$set": {
-                "status": "submitted",
+                "status": "Unapproved",
                 "submitted_by": current_user.id,
-                "submitted_at": datetime.now(timezone.utc)
+                "submitted_at": datetime.now(timezone.utc),
+                "modified_by": current_user.id,
+                "updated_at": datetime.now(timezone.utc)
             }}
         )
         
