@@ -597,7 +597,21 @@ const OpportunityManagement = () => {
     }
   };
 
-  const navigateToStage = (stage) => {
+  const navigateToStage = async (stage) => {
+    // Check stage access (especially for L5)
+    if (stage === 'L5') {
+      const hasAccess = await checkStageAccess('L5');
+      if (!hasAccess) {
+        const accessInfo = stageAccess['L5'];
+        if (accessInfo && accessInfo.guard_message) {
+          toast.error(accessInfo.guard_message);
+        } else {
+          toast.error('L5 stage requires at least one approved quotation');
+        }
+        return;
+      }
+    }
+    
     if (hasUnsavedChanges && !isViewMode) {
       if (window.confirm('You have unsaved changes. Do you want to save before switching stages?')) {
         saveStageData().then(() => {
