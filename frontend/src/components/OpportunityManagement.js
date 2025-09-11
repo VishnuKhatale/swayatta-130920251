@@ -150,21 +150,38 @@ const OpportunityManagement = () => {
         ];
       
       case 'L5': // Commercial Negotiations
-        return [
-          { name: 'updated_pricing', label: 'Updated Pricing', type: 'number', required: true },
+        const l5Fields = [
+          { name: 'updated_pricing', label: 'Updated Pricing', type: 'number', required: true, minValue: 0.01 },
           { name: 'margin_check', label: 'Margin Check (%)', type: 'number', required: true },
-          { name: 'terms_conditions', label: 'Terms & Conditions', type: 'textarea' },
+          { name: 'commercial_approval', label: 'Commercial Approval', type: 'button', action: 'triggerApproval' },
+          { name: 'terms_conditions', label: 'T&C', type: 'textarea', expandable: true },
           { name: 'legal_doc_status', label: 'Legal Doc Status', type: 'select', options: [
-            { id: 'pending', name: 'Pending' },
-            { id: 'in_review', name: 'In Review' },
-            { id: 'approved', name: 'Approved' }
+            { id: 'Draft', name: 'Draft' },
+            { id: 'Under Review', name: 'Under Review' },
+            { id: 'Approved', name: 'Approved' },
+            { id: 'Rejected', name: 'Rejected' }
           ]},
           { name: 'po_number', label: 'PO Number', type: 'text', required: true },
           { name: 'po_date', label: 'PO Date', type: 'date' },
-          { name: 'po_amount', label: 'PO Amount', type: 'number' },
-          { name: 'po_file', label: 'PO File', type: 'file', accept: '.pdf,.jpg,.png' },
+          { name: 'po_amount', label: 'PO Amount', type: 'currency' },
+          { name: 'po_file', label: 'PO File (PDF/DOC)', type: 'file', accept: '.pdf,.doc,.docx' },
+          { name: 'po_status', label: 'PO Status', type: 'select', options: [
+            { id: 'Pending', name: 'Pending' },
+            { id: 'Received', name: 'Received' },
+            { id: 'Verified', name: 'Verified' }
+          ]},
           ...commonFields
         ];
+        
+        // Add admin-only fields for internal cost visibility
+        if (userPermissions.can_view_cpc) {
+          l5Fields.push({ name: 'cpc', label: 'CPC (Internal)', type: 'number', adminOnly: true });
+        }
+        if (userPermissions.can_view_overhead) {
+          l5Fields.push({ name: 'overhead', label: 'Overhead (Internal)', type: 'number', adminOnly: true });
+        }
+        
+        return l5Fields;
       
       case 'L6': // Won
         return [
