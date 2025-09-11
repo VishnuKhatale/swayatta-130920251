@@ -154,7 +154,17 @@ const OpportunityManagement = () => {
         const l5Fields = [
           { name: 'updated_pricing', label: 'Updated Pricing', type: 'number', required: true, minValue: 0.01 },
           { name: 'margin_check', label: 'Margin Check (%)', type: 'number', required: true },
-          { name: 'commercial_approval', label: 'Commercial Approval', type: 'button', action: 'triggerApproval' },
+          { 
+            name: 'commercial_decision', 
+            label: 'Commercial Decision', 
+            type: 'select', 
+            required: true,
+            options: [
+              { id: 'Won', name: 'Won (Approve)' },
+              { id: 'Reject', name: 'Reject' }
+            ],
+            roleGated: true // Only Admin/Sales Manager/Commercial Approver
+          },
           { name: 'terms_conditions', label: 'T&C', type: 'textarea', expandable: true },
           { name: 'legal_doc_status', label: 'Legal Doc Status', type: 'select', options: [
             { id: 'Draft', name: 'Draft' },
@@ -175,10 +185,8 @@ const OpportunityManagement = () => {
         ];
         
         // Add admin-only fields for internal cost visibility
-        if (userPermissions.can_view_cpc) {
+        if (userPermissions.can_view_internal_costs) {
           l5Fields.push({ name: 'cpc', label: 'CPC (Internal)', type: 'number', adminOnly: true });
-        }
-        if (userPermissions.can_view_overhead) {
           l5Fields.push({ name: 'overhead', label: 'Overhead (Internal)', type: 'number', adminOnly: true });
         }
         
