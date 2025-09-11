@@ -285,7 +285,7 @@ const QuotationManagement = () => {
     } catch (error) {
       console.error('Error loading quotation:', error);
       toast.error('Failed to load quotation');
-      navigate('/enhanced-opportunities');
+      navigate(opportunityId ? `/opportunities/${opportunityId}/edit?stage=L4` : '/enhanced-opportunities');
     } finally {
       setLoading(false);
     }
