@@ -10935,12 +10935,19 @@ async def create_quotation(quotation_data: dict, current_user: User = Depends(ge
 @api_router.put("/quotations/{quotation_id}", response_model=APIResponse)
 @require_permission("/opportunities", "edit")
 async def update_quotation(quotation_id: str, quotation_data: dict, current_user: User = Depends(get_current_user)):
-    """Update a quotation"""
+    """Update a quotation - only allowed for Draft/Unapproved status"""
     try:
         # Check if quotation exists
         existing = await db.quotations.find_one({"id": quotation_id, "is_deleted": False})
         if not existing:
             raise HTTPException(status_code=404, detail="Quotation not found")
+        
+        # Check if quotation can be edited
+        if existing["status"] == "Approved":
+            raise HTTPException(
+                status_code=400, 
+                detail="Approved quotations cannot be edited"
+            )
         
         # Update quotation
         quotation_data["modified_by"] = current_user.id
