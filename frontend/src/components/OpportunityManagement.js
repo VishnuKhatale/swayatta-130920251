@@ -216,11 +216,17 @@ const OpportunityManagement = () => {
       case 'L8': // Dropped
         return [
           { name: 'drop_reason', label: 'Drop Reason', type: 'select', options: [
-            { id: 'inactive', name: 'Inactive' },
-            { id: 'cancelled', name: 'Cancelled' },
-            { id: 'no_budget', name: 'No Budget' }
+            { id: 'Client Inactive', name: 'Client Inactive' },
+            { id: 'Budget Frozen', name: 'Budget Frozen' },
+            { id: 'Project Cancelled', name: 'Project Cancelled' },
+            { id: 'Unresponsive', name: 'Unresponsive' },
+            { id: 'Internal Resource Constraints', name: 'Internal Resource Constraints' },
+            { id: 'Other', name: 'Other' }
           ], required: true },
-          { name: 'notes', label: 'Notes', type: 'textarea' }
+          { name: 'auto_drop_logic', label: 'Auto-Drop Logic', type: 'display', value: '30 days of inactivity', readOnly: true },
+          { name: 're_nurture_tag', label: 'Re-Nurture Tag', type: 'checkbox' },
+          { name: 'reminder_date', label: 'Reminder Date (for reactivation)', type: 'date' },
+          { name: 'reactivation', label: 'Reactivation', type: 'button', action: 'reactivateOpportunity' }
         ];
       
       default:
