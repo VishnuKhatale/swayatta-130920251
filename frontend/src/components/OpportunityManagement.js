@@ -739,11 +739,16 @@ const OpportunityManagement = () => {
     const currentStageData = stageFormData[currentStage] || {};
     const value = currentStageData[field.name] || field.defaultValue || '';
 
-    if (isViewMode) {
+    // Hide admin-only fields for non-admin users
+    if (field.adminOnly && !userPermissions.can_view_cpc && !userPermissions.can_view_overhead) {
+      return null;
+    }
+
+    if (isViewMode || field.readOnly) {
       // Read-only display
       return (
         <div className="p-3 bg-gray-50 border rounded-md min-h-[40px]">
-          {value || <span className="text-gray-400 italic">Not provided</span>}
+          {field.type === 'display' ? field.value : (value || <span className="text-gray-400 italic">Not provided</span>)}
         </div>
       );
     }
