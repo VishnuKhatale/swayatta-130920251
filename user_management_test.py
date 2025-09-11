@@ -5,7 +5,7 @@ from datetime import datetime, timezone, timedelta
 import os
 
 class UserManagementTester:
-    def __init__(self, base_url="https://quotation-system-1.preview.emergentagent.com"):
+    def __init__(self, base_url="https://unified-opp-mgmt.preview.emergentagent.com"):
         self.base_url = base_url
         self.api_url = f"{base_url}/api"
         self.token = None

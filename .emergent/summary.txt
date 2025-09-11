@@ -1,0 +1,104 @@
+<analysis>
+The AI engineer's trajectory details the iterative development of the Swayatta 4.0 CRM/ERP, moving from initial QMS (Quotation Management System) bug fixes and master data integration to a significant refactoring of Opportunity Stage Management. Initially, QMS pricing, recalculation, and persistence issues were tackled by updating backend APIs and frontend logic in . This involved adding rate card selectors, dynamic pricing, and CRUD for master data. The subsequent phase focused on transforming Opportunity Stage Management from modals to a unified, full-page experience, addressing regressions related to field persistence, API calls, and dropdown functionality. The current state reflects a working, unified opportunity form, but the user has now outlined comprehensive requirements for the quotation flow (status, stage gating, UI) and detailed L5-L8 stage logic, which the AI is starting to implement.
+</analysis>
+
+<product_requirements>
+The overarching goal is to complete Swayatta 4.0 CRM/ERP, encompassing User Management, Sales (Masters, Partners, Companies CRUD), and a robust Opportunity Management (L1-L8 stages with 38 rules).
+**Implemented Features & Current Focus:**
+1.  **Enhanced Opportunity Management:** Initial fixes for company dropdowns, L3-L4 transitions, file uploads. Recently unified into a full-page, multi-stage form (Create/Edit/View).
+2.  **Quotation Management System (QMS):** Designed as a full-page workflow, replacing an earlier modal. Requires 14 backend master tables, multi-phase (Phase→Group→Item) structure with 10-year pricing, multi-level discounts, approvals, versioning. Frontend needs to auto-fill prices from Product Master/Price Lists based on validity, perform real-time hierarchical calculations (OTP, Recurring, Grand Total), persist full hierarchy including  and , and display new/edited quotes instantly in Existing Quotations. A  selector, linked to , must drive pricing.
+3.  **Master Data Admin:** CRUD, search, filter, pagination, status toggle, and date range validation for , ,  (Rate Cards), and  (5 levels) are required.
+
+**Latest User Requests (Current Priorities):**
+1.  **Quotation Flow (L4):**
+    *    / : Redirect to L4, list quotation immediately with correct status (Draft/Unapproved).
+    *   **Quotation Status:** Add Draft, Unapproved, Approved states. Allow delete for Draft/Unapproved; read-only if Approved.
+    *   **Stage Gating (L5):** L5 accessible only if at least one quotation is Approved.
+    *   **Existing Quotations UI:** Clean card/table list with Quote ID, Status, Dates, Totals (OTP, Recurring, Grand Total), and Actions (View/Edit, Approve, Delete). Filters/search required.
+    *   **Quotation Detail View:** Open full quotation editor, read-only if Approved. Retain sticky action bar, pricing summary, status, rate card, audit info.
+2.  **L5–L8 Stage Fields & Logic:** Implement detailed fields, validations, and actions for Commercial Negotiations (L5), Won (L6), Lost (L7), and Dropped (L8) stages, including role-gating for admin-only fields. Final stage button should lead to opportunity listing.
+</product_requirements>
+
+<key_technical_concepts>
+-   **Full-stack Architecture**: React (frontend), FastAPI (backend), MongoDB.
+-   **UI/UX**: Tailwind CSS, shadcn/ui components, responsive design.
+-   **Data Management**: Pydantic models, MongoDB (UUIDs), master data, relational schema emulation.
+-   **API Design**: RESTful APIs ( prefix), CRUD operations.
+-   **Deployment**: Kubernetes container, Supervisor for service management.
+-   **React Concepts**: , , , Context API (for auth/permissions).
+</key_technical_concepts>
+
+<code_architecture>
+The application follows a standard full-stack architecture with  and  directories.
+
+
+
+-   ****:
+    -   **Importance**: Central FastAPI application. Handles all backend logic, API routes, and MongoDB interactions. Contains data models for , , , and all quotation-related entities.
+    -   **Changes Made**:
+        -   Extensive CRUD APIs for 14 master tables related to QMS.
+        -   Refined pricing APIs () to support date-based validity and  for rate cards.
+        -   Added CRUD APIs for  and .
+        -   Ensured correct MongoDB ObjectId/datetime serialization and UUID usage.
+        -   Updated  to include .
+-   ****:
+    -   **Importance**: Defines top-level React application structure, global routes, and sidebar navigation.
+    -   **Changes Made**:
+        -   Added routes for full-page  (, ).
+        -   Updated and unified routes for Opportunity Management to point to  (, , ).
+        -   Integrated  and removed older/deprecated stage management components/routes. Fixed duplicate import of .
+-   ****:
+    -   **Importance**: Previously managed advanced opportunity features and modal-based QMS. Now functions primarily as the list/pipeline view and entry point for the *new* full-page Opportunity Management and Quotation processes.
+    -   **Changes Made**:
+        -   Removed modal-based QMS integration; updated Add Quotation actions to navigate to .
+        -   Updated View All Stages and opportunity card clicks to navigate to the new unified full-page  ().
+        -   Updated Create Opportunity button to navigate to .
+-   ****:
+    -   **Importance**: The full-page component for creating and editing quotations, handling hierarchical data (Phase→Group→Item) and complex calculations.
+    -   **Changes Made**:
+        -   Major rewrite for hierarchical structure, real-time calculations (OTP, Recurring, Grand Totals).
+        -   Implemented persistence for complete hierarchy, snapshotted prices, and .
+        -   Integrated a  selector in the header, enabling pricing from selected lists.
+        -   Updated  and  to fetch and use dynamic pricing based on the selected rate card and phase start date.
+        -   Added visual warnings for items with missing prices.
+        -   Simplified UI layout, added section headers, tooltips for pricing, and consistent spacing.
+-   ****:
+    -   **Importance**: The newly unified full-page component for creating and editing opportunities across all L1-L8 stages.
+    -   **Changes Made**:
+        -   Rewritten from simpler  to replicate the exact field structure, order, enums, and validations of the *old modal forms* for stages L1-L6.
+        -   Implemented data loading and pre-population for existing opportunities.
+        -   Fixed  and  to use the correct backend API () with the expected payload (, ).
+        -   Integrated proper master data handling for dropdowns (Regions, Product Interest).
+        -   Implemented error handling and analytics error suppression.
+-   ****:
+    -   **Importance**: Admin interface for managing master data entities.
+    -   **Changes Made**: Extended  configuration to include Product and Pricing List (Rate Card) management.
+-   ****:
+    -   **Importance**: Shadcn UI components for consistent UI elements.
+    -   **Changes Made**: Fixed import paths for  components (e.g., , ) in .
+</code_architecture>
+
+<pending_tasks>
+-   Implement behavior after saving a quotation (redirect to L4, list immediately with status).
+-   Add Status field to quotations (Draft, Unapproved, Approved) with associated logic (delete/edit restrictions).
+-   Implement L5 stage gating: accessible only if at least one quotation is Approved.
+-   Enhance Existing Quotations UI with specified columns, badges, actions, filters, and search.
+-   Implement detailed fields, validations, and logic for L5 (Commercial Negotiations), L6 (Won), L7 (Lost), and L8 (Dropped) stages.
+-   Ensure admin-only fields (CPC, Overhead) are role-gated.
+-   Implement Final stage button to direct to opportunity listing page and update status.
+</pending_tasks>
+
+<current_work>
+Immediately before this summary, the AI engineer was focused on resolving a series of critical regressions and unifying the opportunity management experience. The user reported issues with dropdowns (Region, Product Interest) not working or preloading,  not persisting L1 data, and a  API error on the first save of a new opportunity. The AI engineer examined the legacy modal's data loading, form data structure (), and API calls (). Based on this, the  component was fixed to:
+1.  Correctly load  for dropdowns.
+2.  Properly handle pre-filling existing opportunity data.
+3.  Utilize the correct API call for saving stage data ( with  and ).
+4.  Address dropdown rendering for various option sources.
+5.  Refactor L1 stage field configuration.
+6.  Add analytics error suppression and certificate issue handling.
+The frontend was restarted and is now compiling successfully. The AI has just completed fixing all reported regressions related to unified opportunity management.
+</current_work>
+
+<optional_next_step>
+The next step is to update the  component to handle quotation status and redirect users to L4 after saving.
+</optional_next_step>
