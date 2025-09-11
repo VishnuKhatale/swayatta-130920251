@@ -523,6 +523,65 @@ const OpportunityManagement = () => {
     setHasUnsavedChanges(true);
   };
 
+  // Complete final stage (L6/L7/L8) with opportunity status update
+  const completeFinalStage = async () => {
+    const confirmMessage = `Are you sure you want to complete this final stage? This action is irreversible and will update the opportunity status.`;
+    if (!window.confirm(confirmMessage)) return;
+
+    try {  
+      setSaving(true);
+
+      // First save the current stage data
+      await saveStageData(false);
+
+      // Determine the final opportunity status based on current stage
+      let finalStatus;
+      switch (currentStage) {
+        case 'L6':
+          finalStatus = 'Won';
+          break;
+        case 'L7':
+          finalStatus = 'Lost';
+          break;
+        case 'L8':
+          finalStatus = 'Dropped';
+          break;
+        default:
+          finalStatus = 'Closed';
+      }
+
+      // Update opportunity status
+      const response = await axios.put(`${API_BASE_URL}/api/opportunities/${opportunityId}/stage`, {
+        stage_id: currentStage,
+        form_data: {
+          ...stageFormData,
+          final_status: finalStatus,
+          completion_date: new Date().toISOString()
+        }
+      }, {
+        headers: getAuthHeaders()
+      });
+
+      if (response.data.success) {
+        toast.success(`Opportunity marked as ${finalStatus} successfully`);
+        
+        // Redirect to opportunities list with live refresh
+        navigate('/enhanced-opportunities', { replace: true });
+        
+        // Trigger a page reload to refresh pipeline and KPIs (temporary solution)
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
+      }
+    } catch (error) {
+      console.error('Error completing final stage:', error);
+      const errorMessage = error.response?.data?.detail || error.response?.data?.message || error.message;
+      toast.error(`Failed to complete final stage: ${errorMessage}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   // Use the exact same API call as the existing modal
   const saveStageData = async (continueToNext = false) => {
     try {
