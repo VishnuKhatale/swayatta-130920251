@@ -803,8 +803,17 @@ const OpportunityManagement = () => {
     const value = currentStageData[field.name] || field.defaultValue || '';
 
     // Hide admin-only fields for non-admin users
-    if (field.adminOnly && !userPermissions.can_view_cpc && !userPermissions.can_view_overhead) {
+    if (field.adminOnly && !userPermissions.can_view_internal_costs) {
       return null;
+    }
+
+    // Hide role-gated fields for non-authorized users (commercial decision)
+    if (field.roleGated && !userPermissions.can_approve) {
+      return (
+        <div className="p-3 bg-gray-100 border rounded-md">
+          <span className="text-gray-500 italic">Restricted to Admin/Sales Manager/Commercial Approver only</span>
+        </div>
+      );
     }
 
     if (isViewMode || field.readOnly) {
