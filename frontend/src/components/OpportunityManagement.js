@@ -277,11 +277,16 @@ const OpportunityManagement = () => {
     loadMasterData();
   }, [opportunityId, isCreateMode]);
 
-  // Update stage from URL changes
+  // Update stage from URL changes and check access
   useEffect(() => {
     const newStage = getInitialStage();
     setCurrentStage(newStage);
-  }, [location.search]);
+    
+    // Check stage access when stage changes
+    if (newStage === 'L5' && opportunityId) {
+      checkStageAccess('L5');
+    }
+  }, [location.search, opportunityId]);
 
   // Unsaved changes warning
   useEffect(() => {
