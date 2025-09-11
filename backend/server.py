@@ -9962,7 +9962,85 @@ async def get_stage_form_schema(stage_id: str, current_user: User = Depends(get_
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@api_router.get("/opportunities/{opportunity_id}/stage-access/{stage_id}", response_model=APIResponse)
+@require_permission("/opportunities", "view")
+async def check_stage_access(opportunity_id: str, stage_id: str, current_user: User = Depends(get_current_user)):
+    """Check if a stage can be accessed based on business rules"""
+    try:
+        # Verify opportunity exists
+        opportunity = await db.opportunities.find_one({"id": opportunity_id, "is_deleted": False})
+        if not opportunity:
+            raise HTTPException(status_code=404, detail="Opportunity not found")
+        
+        # Stage access rules
+        if stage_id == "L5":
+            # L5 accessible only if at least one quotation is Approved
+            approved_quotations = await db.quotations.find({
+                "opportunity_id": opportunity_id,
+                "is_deleted": False,
+                "status": "Approved"
+            }).to_list(None)
+            
+            if not approved_quotations:
+                return APIResponse(
+                    success=False, 
+                    message="L5 stage access denied. At least one quotation must be Approved to access Commercial Negotiations.",
+                    data={
+                        "stage_id": stage_id,
+                        "accessible": False,
+                        "reason": "No approved quotations found",
+                        "guard_message": "Proceed to L5 after a quotation is Approved."
+                    }
+                )
+        
+        # Default: stage is accessible
+        return APIResponse(
+            success=True,
+            message="Stage access granted",
+            data={
+                "stage_id": stage_id,
+                "accessible": True,
+                "reason": "Access requirements met"
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
+# Add permission for internal cost visibility
+async def check_internal_cost_permission(user: User) -> bool:
+    """Check if user can view internal costs (CPC/Overhead fields)"""
+    try:
+        # Get user's role
+        user_doc = await db.users.find_one({"id": user.id, "is_deleted": False})
+        if not user_doc:
+            return False
+        
+        role = await db.roles.find_one({"id": user_doc["role_id"], "is_deleted": False})
+        if not role:
+            return False
+        
+        # Check if user has internal cost viewing permissions
+        allowed_roles = ["Admin", "Commercial Approver"]
+        return role["name"] in allowed_roles
+        
+    except Exception:
+        return False
+
+@api_router.get("/auth/permissions/internal-costs", response_model=APIResponse)
+async def check_internal_cost_access(current_user: User = Depends(get_current_user)):
+    """Check if current user can view internal cost fields"""
+    try:
+        has_access = await check_internal_cost_permission(current_user)
+        return APIResponse(
+            success=True,
+            message="Internal cost permission checked",
+            data={"can_view_internal_costs": has_access}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # ===== COMPANY MANAGEMENT MODULE - ENHANCED MASTER DATA APIs =====
 
