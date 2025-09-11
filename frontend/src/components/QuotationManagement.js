@@ -515,13 +515,27 @@ const QuotationManagement = () => {
         const statusMessage = isSubmit ? 'Quotation submitted for approval' : 'Quotation saved as draft';
         toast.success(statusMessage);
         
-        // Always redirect to L4 stage after save (as per requirements)
-        if (opportunityId) {
-          navigate(`/opportunities/${opportunityId}/edit?stage=L4`, { replace: true });
-        } else {
-          // Fallback to opportunities list
-          navigate('/enhanced-opportunities');
-        }
+        // Create quotation data for optimistic update with correct totals
+        const savedQuotationData = {
+          id: response.data.data.id || quotationId,
+          quotation_number: response.data.data.quotation_number || quotationFormData.quotation_number,
+          status: isSubmit ? 'Unapproved' : 'Draft',
+          created_at: response.data.data.created_at || new Date().toISOString(),
+          calculated_otp: totals.quotation_otp,
+          calculated_recurring: totals.quotation_recurring_monthly,
+          calculated_tenure_recurring: totals.quotation_recurring_total_tenure,
+          calculated_grand_total: totals.grand_total,
+          opportunity_id: opportunityId
+        };
+        
+        // Navigate to L4 with the quotation data for immediate display
+        navigate(`/opportunities/${opportunityId}/edit?stage=L4`, { 
+          replace: true,
+          state: { 
+            savedQuotation: savedQuotationData,
+            refreshQuotations: true 
+          }
+        });
       }
     } catch (error) {
       console.error('Error saving quotation:', error);
