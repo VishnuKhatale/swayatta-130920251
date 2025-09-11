@@ -10897,6 +10897,61 @@ async def get_quotation(quotation_id: str, current_user: User = Depends(get_curr
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@api_router.get("/opportunities/{opportunity_id}/quotations", response_model=APIResponse)
+@require_permission("/opportunities", "view")
+async def get_opportunity_quotations(opportunity_id: str, current_user: User = Depends(get_current_user)):
+    """Get all quotations for a specific opportunity"""
+    try:
+        # Verify opportunity exists
+        opportunity = await db.opportunities.find_one({"id": opportunity_id, "is_deleted": False})
+        if not opportunity:
+            raise HTTPException(status_code=404, detail="Opportunity not found")
+        
+        # Get quotations for this opportunity
+        quotations = await db.quotations.find({
+            "opportunity_id": opportunity_id, 
+            "is_deleted": False
+        }).sort("created_at", -1).to_list(1000)
+        
+        # Calculate totals for each quotation
+        for quotation in quotations:
+            # Calculate totals from phases
+            phases = await db.quotation_phases.find({
+                "quotation_id": quotation["id"], 
+                "is_deleted": False
+            }).to_list(100)
+            
+            total_otp = sum(phase.get("phase_total_otp", 0) for phase in phases)
+            total_recurring = sum(phase.get("phase_total_year1", 0) for phase in phases)
+            total_tenure_recurring = sum(
+                phase.get("phase_total_year1", 0) + phase.get("phase_total_year2", 0) + 
+                phase.get("phase_total_year3", 0) + phase.get("phase_total_year4", 0) +
+                phase.get("phase_total_year5", 0) + phase.get("phase_total_year6", 0) +
+                phase.get("phase_total_year7", 0) + phase.get("phase_total_year8", 0) +
+                phase.get("phase_total_year9", 0) + phase.get("phase_total_year10", 0)
+                for phase in phases
+            )
+            grand_total = total_otp + total_tenure_recurring
+            
+            # Add calculated totals to quotation
+            quotation["calculated_otp"] = total_otp
+            quotation["calculated_recurring"] = total_recurring
+            quotation["calculated_tenure_recurring"] = total_tenure_recurring
+            quotation["calculated_grand_total"] = grand_total
+            
+            # Remove MongoDB _id field
+            quotation.pop("_id", None)
+        
+        return APIResponse(
+            success=True, 
+            message="Opportunity quotations retrieved successfully", 
+            data=quotations
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @api_router.post("/quotations", response_model=APIResponse)
 @require_permission("/opportunities", "create")
 async def create_quotation(quotation_data: dict, current_user: User = Depends(get_current_user)):
