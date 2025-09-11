@@ -10045,11 +10045,29 @@ async def check_internal_cost_permission(user: User) -> bool:
 async def check_internal_cost_access(current_user: User = Depends(get_current_user)):
     """Check if current user can view internal cost fields"""
     try:
-        has_access = await check_internal_cost_permission(current_user)
+        # Get user's role
+        user_doc = await db.users.find_one({"id": current_user.id, "is_deleted": False})
+        user_role = "Unknown"
+        can_view_cpc = False
+        can_view_overhead = False
+        
+        if user_doc:
+            role = await db.roles.find_one({"id": user_doc["role_id"], "is_deleted": False})
+            if role:
+                user_role = role["name"]
+                # Check permissions based on role
+                if user_role in ["Admin", "Commercial Approver", "Sales Manager"]:
+                    can_view_cpc = True
+                    can_view_overhead = True
+        
         return APIResponse(
             success=True,
             message="Internal cost permission checked",
-            data={"can_view_internal_costs": has_access}
+            data={
+                "can_view_cpc": can_view_cpc,
+                "can_view_overhead": can_view_overhead,
+                "user_role": user_role
+            }
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
