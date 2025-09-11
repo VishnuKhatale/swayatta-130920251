@@ -628,8 +628,23 @@ const OpportunityManagement = () => {
     try {
       setSaving(true);
       
-      const nextStage = continueToNext ? getNextStage() : null;
-      const targetStage = nextStage || currentStage;
+      let targetStage = currentStage;
+      
+      // Handle L5 commercial decision logic
+      if (currentStage === 'L5' && continueToNext) {
+        const commercialDecision = stageFormData[currentStage]?.commercial_decision;
+        if (commercialDecision === 'Won') {
+          targetStage = 'L6';
+        } else if (commercialDecision === 'Reject') {
+          targetStage = 'L7';
+        } else {
+          toast.error('Commercial Decision is required to proceed from L5');
+          return;
+        }
+      } else if (continueToNext) {
+        const nextStage = getNextStage();
+        targetStage = nextStage || currentStage;
+      }
       
       if (isCreateMode) {
         // For create mode, create the opportunity first with basic data, then save stage data
@@ -651,8 +666,8 @@ const OpportunityManagement = () => {
           const newId = response.data.data.id;
           toast.success('Opportunity created successfully');
           
-          if (continueToNext && nextStage) {
-            navigate(`/opportunities/${newId}/edit?stage=${nextStage}`, { replace: true });
+          if (continueToNext && targetStage !== currentStage) {
+            navigate(`/opportunities/${newId}/edit?stage=${targetStage}`, { replace: true });
           } else {
             navigate(`/opportunities/${newId}/edit?stage=${currentStage}`, { replace: true });
           }
@@ -674,11 +689,18 @@ const OpportunityManagement = () => {
         if (response.data.success) {
           setHasUnsavedChanges(false);
           calculateStageStatuses(stageFormData);
-          toast.success(continueToNext ? 'Saved and moved to next stage' : 'Stage data saved successfully');
           
-          if (continueToNext && nextStage) {
-            setCurrentStage(nextStage);
-            navigate(`/opportunities/${opportunityId}/edit?stage=${nextStage}`, { replace: true });
+          // Special message for L5 decision routing
+          if (currentStage === 'L5' && continueToNext) {
+            const decision = stageFormData[currentStage]?.commercial_decision;
+            toast.success(`Commercial decision: ${decision}. Moved to ${targetStage === 'L6' ? 'Won' : 'Lost'} stage.`);
+          } else {
+            toast.success(continueToNext ? 'Saved and moved to next stage' : 'Stage data saved successfully');
+          }
+          
+          if (continueToNext && targetStage !== currentStage) {
+            setCurrentStage(targetStage);
+            navigate(`/opportunities/${opportunityId}/edit?stage=${targetStage}`, { replace: true });
           }
         }
       }
