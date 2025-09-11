@@ -11025,6 +11025,138 @@ async def submit_quotation(quotation_id: str, current_user: User = Depends(get_c
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@api_router.post("/quotations/{quotation_id}/approve", response_model=APIResponse)
+@require_permission("/opportunities", "edit")
+async def approve_quotation(quotation_id: str, current_user: User = Depends(get_current_user)):
+    """Approve quotation - only Commercial Approver, Sales Manager, or Admin roles"""
+    try:
+        # Check user role for approval permissions
+        user_doc = await db.users.find_one({"id": current_user.id, "is_deleted": False})
+        if not user_doc:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        role = await db.roles.find_one({"id": user_doc["role_id"], "is_deleted": False})
+        if not role:
+            raise HTTPException(status_code=404, detail="User role not found")
+        
+        # Check if user has approval permissions
+        allowed_roles = ["Admin", "Commercial Approver", "Sales Manager"]
+        if role["name"] not in allowed_roles:
+            raise HTTPException(
+                status_code=403, 
+                detail=f"Insufficient permissions. Only {', '.join(allowed_roles)} can approve quotations"
+            )
+        
+        # Get quotation
+        quotation = await db.quotations.find_one({"id": quotation_id, "is_deleted": False})
+        if not quotation:
+            raise HTTPException(status_code=404, detail="Quotation not found")
+        
+        if quotation["status"] != "Unapproved":
+            raise HTTPException(status_code=400, detail="Only Unapproved quotations can be approved")
+        
+        # Update status to Approved
+        await db.quotations.update_one(
+            {"id": quotation_id},
+            {"$set": {
+                "status": "Approved",
+                "approved_by": current_user.id,
+                "approved_at": datetime.now(timezone.utc),
+                "modified_by": current_user.id,
+                "updated_at": datetime.now(timezone.utc)
+            }}
+        )
+        
+        # Log audit trail
+        audit_log = QuotationAuditLog(
+            quotation_id=quotation_id,
+            table_name="quotations",
+            record_id=quotation_id,
+            action="approve",
+            user_id=current_user.id,
+            user_role=role["name"]
+        )
+        await db.quotation_audit_log.insert_one(audit_log.dict())
+        
+        return APIResponse(success=True, message="Quotation approved successfully")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.delete("/quotations/{quotation_id}", response_model=APIResponse)
+@require_permission("/opportunities", "edit")
+async def delete_quotation(quotation_id: str, current_user: User = Depends(get_current_user)):
+    """Delete quotation - only allowed for Draft/Unapproved status"""
+    try:
+        # Get quotation
+        quotation = await db.quotations.find_one({"id": quotation_id, "is_deleted": False})
+        if not quotation:
+            raise HTTPException(status_code=404, detail="Quotation not found")
+        
+        # Check if quotation can be deleted
+        if quotation["status"] not in ["Draft", "Unapproved"]:
+            raise HTTPException(
+                status_code=400, 
+                detail="Only Draft or Unapproved quotations can be deleted"
+            )
+        
+        # Soft delete the quotation and related data
+        await db.quotations.update_one(
+            {"id": quotation_id},
+            {"$set": {
+                "is_deleted": True,
+                "deleted_by": current_user.id,
+                "deleted_at": datetime.now(timezone.utc),
+                "updated_at": datetime.now(timezone.utc)
+            }}
+        )
+        
+        # Soft delete related phases, groups, and items
+        await db.quotation_phases.update_many(
+            {"quotation_id": quotation_id},
+            {"$set": {"is_deleted": True}}
+        )
+        
+        await db.quotation_groups.update_many(
+            {"phase_id": {"$in": [
+                phase["id"] for phase in await db.quotation_phases.find(
+                    {"quotation_id": quotation_id}
+                ).to_list(None)
+            ]}},
+            {"$set": {"is_deleted": True}}
+        )
+        
+        await db.quotation_items.update_many(
+            {"group_id": {"$in": [
+                group["id"] for group in await db.quotation_groups.find(
+                    {"phase_id": {"$in": [
+                        phase["id"] for phase in await db.quotation_phases.find(
+                            {"quotation_id": quotation_id}
+                        ).to_list(None)
+                    ]}}
+                ).to_list(None)
+            ]}},
+            {"$set": {"is_deleted": True}}
+        )
+        
+        # Log audit trail
+        audit_log = QuotationAuditLog(
+            quotation_id=quotation_id,
+            table_name="quotations",
+            record_id=quotation_id,
+            action="delete",
+            user_id=current_user.id,
+            user_role="user"
+        )
+        await db.quotation_audit_log.insert_one(audit_log.dict())
+        
+        return APIResponse(success=True, message="Quotation deleted successfully")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 # 6. Quotation Export
 @api_router.get("/quotations/{quotation_id}/export/{format}", response_model=APIResponse)
 @require_permission("/opportunities", "view")
