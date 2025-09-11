@@ -185,16 +185,16 @@ const OpportunityManagement = () => {
       
       case 'L6': // Won
         return [
-          { name: 'final_value', label: 'Final Value', type: 'number', required: true },
-          { name: 'client_poc', label: 'Client PoC', type: 'text' },
+          { name: 'final_value', label: 'Final Value', type: 'currency', required: true, minValue: 0.01 },
+          { name: 'client_poc', label: 'Client PoC', type: 'text', validation: 'contact' },
           { name: 'handover_status', label: 'Handover Status', type: 'select', options: [
-            { id: 'pending', name: 'Pending' },
-            { id: 'in_progress', name: 'In Progress' },
-            { id: 'completed', name: 'Completed' }
+            { id: 'Pending', name: 'Pending' },
+            { id: 'In Progress', name: 'In Progress' },
+            { id: 'Complete', name: 'Complete' }
           ], required: true },
-          { name: 'delivery_team', label: 'Delivery Team', type: 'select', options: masterData.users },
-          { name: 'kickoff_task', label: 'Kickoff Task', type: 'textarea' },
-          { name: 'revenue_recognition', label: 'Revenue Recognition Flag', type: 'checkbox' }
+          { name: 'delivery_team', label: 'Delivery Team', type: 'multiselect', options: masterData.users },
+          { name: 'kickoff_task', label: 'Kickoff Task', type: 'textarea', maxLength: 1000 },
+          { name: 'revenue_recognition', label: 'Revenue Recognition Flag', type: 'checkbox', audited: true }
         ];
       
       case 'L7': // Lost
