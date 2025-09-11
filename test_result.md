@@ -495,6 +495,37 @@ backend:
     stuck_count: 0
     priority: "high"
     needs_retesting: false
+
+  - task: "🎯 Phase 2 Frontend - Quotation Status Management & L5 Stage Gating Implementation"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/QuotationManagement.js, /app/frontend/src/components/OpportunityManagement.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    implementation_details:
+      - "Updated QuotationManagement.js to handle new status flow (Draft → Unapproved → Approved)"
+      - "Modified save quotation to redirect to L4 stage after save/submit operations"
+      - "Added L4 quotation management UI with status badges and action buttons"
+      - "Implemented L5 stage gating based on approved quotations"
+      - "Added role-based visibility for approval/delete actions"
+      - "Enhanced OpportunityManagement.js with quotation list display"
+      - "Added admin-only field visibility (CPC/Overhead) for L5-L8 stages"
+      - "Implemented Complete Final Stage functionality for L6/L7/L8"
+      - "Added L5-L8 stage field definitions with validation"
+    features_implemented:
+      - "Quotation status flow: Draft → Unapproved → Approved (no revert except Admin)"
+      - "L4 existing quotations display with status badges, totals, and action buttons"
+      - "Approve/Delete actions with proper role-based permissions"
+      - "L5 stage access gating (requires ≥1 Approved quotation)"
+      - "Read-only mode for Approved quotations"
+      - "Complete Final Stage button for L6/L7/L8 with opportunity status updates"
+      - "Redirect to opportunities list with live refresh after final stage completion"
+      - "Enhanced field types: currency, button, admin-only visibility"
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Phase 2 Frontend Implementation COMPLETED - Successfully implemented quotation status management, L4 enhanced UI, L5 stage gating, L6-L8 stage forms with admin role gating, and Complete Final Stage functionality. Frontend compiling successfully without errors. Ready for manual testing by user."
     endpoints_tested:
       - "GET /api/products/catalog - Product Catalog for Quotation Items (✅ Working)"
       - "GET /api/master/currencies - Currency Master Data (✅ Working)"
