@@ -1037,22 +1037,113 @@ const OpportunityManagement = () => {
               </div>
             )}
 
-            {/* Add Quotation Button for L4+ */}
-            {canShowAddQuotation() && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center text-green-800">
-                    <FileText className="h-4 w-4 mr-2" />
-                    <span className="text-sm font-medium">Quotation Management Available</span>
+            {/* L4 Quotation Management */}
+            {currentStage === 'L4' && !isViewMode && (
+              <div className="space-y-6">
+                {/* Add Quotation Button */}
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center text-green-800">
+                      <FileText className="h-4 w-4 mr-2" />
+                      <span className="text-sm font-medium">Quotation Management Available</span>
+                    </div>
+                    <Button
+                      onClick={handleAddQuotation}
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Quotation
+                    </Button>
                   </div>
-                  <Button
-                    onClick={handleAddQuotation}
-                    size="sm"
-                    className="bg-green-600 hover:bg-green-700 text-white"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Quotation
-                  </Button>
+                </div>
+
+                {/* Existing Quotations */}
+                {quotations.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center">
+                        <FileText className="h-5 w-5 mr-2" />
+                        Existing Quotations
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {quotations.map((quotation) => (
+                          <div key={quotation.id} className="border border-gray-200 rounded-lg p-4">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-4">
+                                <div>
+                                  <div className="font-medium text-gray-900">{quotation.quotation_number}</div>
+                                  <div className="text-sm text-gray-500">
+                                    Created: {new Date(quotation.created_at).toLocaleDateString()}
+                                  </div>
+                                </div>
+                                <Badge 
+                                  className={
+                                    quotation.status === 'Approved' ? 'bg-green-100 text-green-800' :
+                                    quotation.status === 'Unapproved' ? 'bg-yellow-100 text-yellow-800' :
+                                    'bg-gray-100 text-gray-800'
+                                  }
+                                >
+                                  {quotation.status}
+                                </Badge>
+                              </div>
+                              
+                              <div className="flex items-center space-x-4">
+                                <div className="text-right text-sm">
+                                  <div className="font-medium">OTP: ${quotation.calculated_otp?.toLocaleString() || '0'}</div>
+                                  <div className="text-gray-500">Recurring: ${quotation.calculated_recurring?.toLocaleString() || '0'}/mo</div>
+                                  <div className="font-medium text-blue-600">Total: ${quotation.calculated_grand_total?.toLocaleString() || '0'}</div>
+                                </div>
+                                
+                                <div className="flex items-center space-x-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => navigate(`/quotation/${quotation.id}?opportunityId=${opportunityId}`)}
+                                  >
+                                    {quotation.status === 'Approved' ? 'View' : 'Edit'}
+                                  </Button>
+                                  
+                                  {quotation.status === 'Unapproved' && userPermissions.can_approve && (
+                                    <Button
+                                      size="sm"
+                                      onClick={() => approveQuotation(quotation.id)}
+                                      className="bg-green-600 hover:bg-green-700 text-white"
+                                    >
+                                      Approve
+                                    </Button>
+                                  )}
+                                  
+                                  {['Draft', 'Unapproved'].includes(quotation.status) && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => deleteQuotation(quotation.id)}
+                                      className="text-red-600 hover:text-red-700"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
+
+            {/* L5 Stage Gating Message */}
+            {currentStage === 'L5' && stageAccess['L5'] && !stageAccess['L5'].access_granted && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <div className="flex items-center text-yellow-800">
+                  <AlertTriangle className="h-4 w-4 mr-2" />
+                  <span className="text-sm font-medium">{stageAccess['L5'].guard_message}</span>
                 </div>
               </div>
             )}
