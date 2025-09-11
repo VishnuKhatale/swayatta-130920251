@@ -488,7 +488,8 @@ const QuotationManagement = () => {
             }))
           }))
         })),
-        status: isSubmit ? 'submitted' : 'draft',
+        // Use new status flow: Draft -> Unapproved -> Approved
+        status: isSubmit ? 'Unapproved' : 'Draft',
         // Include calculated totals
         total_otp: totals.quotation_otp,
         total_recurring: totals.quotation_recurring_total_tenure,
@@ -511,23 +512,15 @@ const QuotationManagement = () => {
       }
 
       if (response.data.success) {
-        toast.success(isSubmit ? 'Quotation submitted successfully' : 'Quotation saved as draft');
+        const statusMessage = isSubmit ? 'Quotation submitted for approval' : 'Quotation saved as draft';
+        toast.success(statusMessage);
         
-        // If this was a new quotation, redirect to edit mode
-        if (!quotationId) {
-          const newQuotationId = response.data.data.id;
-          navigate(`/quotation/${newQuotationId}?opportunityId=${opportunityId}`, { replace: true });
+        // Always redirect to L4 stage after save (as per requirements)
+        if (opportunityId) {
+          navigate(`/opportunities/${opportunityId}/edit?stage=L4`, { replace: true });
         } else {
-          // Reload the quotation to get updated data
-          await loadQuotation();
-        }
-
-        // Refresh the quotations list in the parent component
-        if (isSubmit) {
-          // Navigate back to opportunities to see the updated list
-          setTimeout(() => {
-            navigate('/enhanced-opportunities');
-          }, 1500);
+          // Fallback to opportunities list
+          navigate('/enhanced-opportunities');
         }
       }
     } catch (error) {
