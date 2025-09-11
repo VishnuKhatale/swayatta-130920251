@@ -9983,13 +9983,25 @@ async def check_stage_access(opportunity_id: str, stage_id: str, current_user: U
             
             if not approved_quotations:
                 return APIResponse(
-                    success=False, 
+                    success=True, 
                     message="L5 stage access denied. At least one quotation must be Approved to access Commercial Negotiations.",
                     data={
                         "stage_id": stage_id,
-                        "accessible": False,
+                        "access_granted": False,
+                        "approved_quotations_count": 0,
                         "reason": "No approved quotations found",
                         "guard_message": "Proceed to L5 after a quotation is Approved."
+                    }
+                )
+            else:
+                return APIResponse(
+                    success=True,
+                    message="L5 stage access granted",
+                    data={
+                        "stage_id": stage_id,
+                        "access_granted": True,
+                        "approved_quotations_count": len(approved_quotations),
+                        "reason": "Access requirements met"
                     }
                 )
         
