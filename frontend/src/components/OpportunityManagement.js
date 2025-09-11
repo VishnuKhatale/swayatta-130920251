@@ -1389,6 +1389,17 @@ const OpportunityManagement = () => {
                       Complete Final Stage
                     </Button>
                   )}
+
+                  {currentStage === 'L5' && stageFormData[currentStage]?.commercial_decision && (
+                    <Button
+                      onClick={() => saveStageData(true)}
+                      disabled={saving}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      <ChevronRight className="h-4 w-4 mr-2" />
+                      Save & Continue to {stageFormData[currentStage]?.commercial_decision === 'Won' ? 'Won (L6)' : 'Lost (L7)'}
+                    </Button>
+                  )}
                 </div>
               </div>
             )}
