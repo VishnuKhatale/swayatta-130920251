@@ -221,6 +221,11 @@ const OpportunityManagement = () => {
     L8: { name: 'Dropped', icon: Circle, description: 'Opportunity dropped or inactive' }
   };
 
+  // Additional state for quotation management and stage gating
+  const [quotations, setQuotations] = useState([]);
+  const [userPermissions, setUserPermissions] = useState({});
+  const [stageAccess, setStageAccess] = useState({});
+
   // Load opportunity data
   useEffect(() => {
     // Suppress analytics errors that could block UI
@@ -240,6 +245,8 @@ const OpportunityManagement = () => {
       calculateStageStatuses({});
     } else if (opportunityId) {
       loadOpportunity();
+      loadQuotations();
+      loadUserPermissions();
     }
     loadMasterData();
   }, [opportunityId, isCreateMode]);
