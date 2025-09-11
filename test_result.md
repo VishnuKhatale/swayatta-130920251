@@ -57,8 +57,8 @@
 ##   test_priority: "high_first"  # or "sequential" or "stuck_first"
 ##
 ## agent_communication:
-##     -agent: "main"  # or "testing" or "user"
-##     -message: "Communication message between agents"
+##     -agent: "main"
+##     -message: "Phase 2 Frontend Implementation completed. Successfully implemented quotation status management (Draft → Unapproved → Approved), L4 enhanced existing quotations UI with status badges and role-based actions, L5 stage gating based on approved quotations, L6-L8 stage forms with admin-only field visibility (CPC/Overhead), and Complete Final Stage functionality. Frontend compiling successfully. Ready for user's manual testing while implementing remaining phases."
 
 # Protocol Guidelines for Main agent
 #
