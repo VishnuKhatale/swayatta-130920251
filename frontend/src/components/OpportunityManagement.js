@@ -300,6 +300,94 @@ const OpportunityManagement = () => {
     }
   };
 
+  // Load quotations for L4 display
+  const loadQuotations = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/opportunities/${opportunityId}/quotations`, {
+        headers: getAuthHeaders()
+      });
+      if (response.data.success) {
+        setQuotations(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error loading quotations:', error);
+      setQuotations([]);
+    }
+  };
+
+  // Load user permissions for role-based visibility
+  const loadUserPermissions = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/auth/permissions/internal-costs`, {
+        headers: getAuthHeaders()
+      });
+      if (response.data.success) {
+        setUserPermissions(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error loading user permissions:', error);
+      setUserPermissions({});
+    }
+  };
+
+  // Check stage access (especially for L5 gating)
+  const checkStageAccess = async (stageId) => {
+    if (!opportunityId) return true;
+    
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/opportunities/${opportunityId}/stage-access/${stageId}`, {
+        headers: getAuthHeaders()
+      });
+      if (response.data.success) {
+        setStageAccess(prev => ({
+          ...prev,
+          [stageId]: response.data.data
+        }));
+        return response.data.data.access_granted;
+      }
+    } catch (error) {
+      console.error(`Error checking access for stage ${stageId}:`, error);
+      return true; // Default to allowing access if check fails
+    }
+    return true;
+  };
+
+  // Approve quotation
+  const approveQuotation = async (quotationId) => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/api/quotations/${quotationId}/approve`, {}, {
+        headers: getAuthHeaders()
+      });
+      if (response.data.success) {
+        toast.success('Quotation approved successfully');
+        loadQuotations(); // Refresh quotations list
+      }
+    } catch (error) {
+      console.error('Error approving quotation:', error);
+      const errorMessage = error.response?.data?.detail || 'Failed to approve quotation';
+      toast.error(errorMessage);
+    }
+  };
+
+  // Delete quotation
+  const deleteQuotation = async (quotationId) => {
+    if (!window.confirm('Are you sure you want to delete this quotation?')) return;
+    
+    try {
+      const response = await axios.delete(`${API_BASE_URL}/api/quotations/${quotationId}`, {
+        headers: getAuthHeaders()
+      });
+      if (response.data.success) {
+        toast.success('Quotation deleted successfully');
+        loadQuotations(); // Refresh quotations list
+      }
+    } catch (error) {
+      console.error('Error deleting quotation:', error);
+      const errorMessage = error.response?.data?.detail || 'Failed to delete quotation';
+      toast.error(errorMessage);
+    }
+  };
+
   const loadMasterData = async () => {
     try {
       // Suppress certificate authority warnings for analytics
