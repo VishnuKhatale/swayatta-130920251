@@ -277,6 +277,34 @@ const OpportunityManagement = () => {
     loadMasterData();
   }, [opportunityId, isCreateMode]);
 
+  // Handle quotation refresh from navigation state
+  useEffect(() => {
+    const navigationState = location.state;
+    if (navigationState?.refreshQuotations && opportunityId) {
+      // If we have a saved quotation from the navigation state, add it optimistically
+      if (navigationState.savedQuotation) {
+        setQuotations(prev => {
+          const existing = prev.find(q => q.id === navigationState.savedQuotation.id);
+          if (existing) {
+            // Update existing quotation
+            return prev.map(q => q.id === navigationState.savedQuotation.id ? navigationState.savedQuotation : q);
+          } else {
+            // Add new quotation
+            return [navigationState.savedQuotation, ...prev];
+          }
+        });
+      }
+      
+      // Also refresh the quotations list to ensure accuracy
+      setTimeout(() => {
+        loadQuotations();
+      }, 100);
+      
+      // Clear the navigation state
+      navigate(location.pathname + location.search, { replace: true, state: {} });
+    }
+  }, [location.state, opportunityId]);
+
   // Update stage from URL changes and check access
   useEffect(() => {
     const newStage = getInitialStage();
