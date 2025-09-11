@@ -923,6 +923,41 @@ const OpportunityManagement = () => {
             <span className="text-sm text-blue-800">{field.value}</span>
           </div>
         );
+
+      case 'currency':
+        return (
+          <div className="flex items-center">
+            <span className="text-gray-500 mr-2">$</span>
+            <Input
+              id={field.name}
+              type="number"
+              value={value}
+              onChange={(e) => handleFieldChange(field.name, e.target.value)}
+              placeholder={`Enter ${field.label.toLowerCase()}`}
+              min={field.minValue || 0}
+              step="0.01"
+              className="w-full"
+            />
+          </div>
+        );
+
+      case 'button':
+        return (
+          <Button
+            onClick={() => {
+              if (field.action === 'triggerApproval') {
+                toast.info('Commercial approval workflow triggered');
+              } else if (field.action === 'reactivateOpportunity') {
+                if (window.confirm('Are you sure you want to reactivate this opportunity?')) {
+                  toast.success('Opportunity reactivated');
+                }
+              }
+            }}
+            className="w-full"
+          >
+            {field.label}
+          </Button>
+        );
         
       default:
         return (
