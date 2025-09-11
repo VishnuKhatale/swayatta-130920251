@@ -879,7 +879,7 @@ const QuotationManagement = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => navigate('/enhanced-opportunities')}
+                onClick={() => navigate(`/opportunities/${opportunityId}/edit?stage=L4`)}
                 className="text-gray-600 hover:text-gray-900"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
