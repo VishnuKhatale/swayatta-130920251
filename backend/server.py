@@ -10982,7 +10982,8 @@ async def create_quotation(quotation_data: dict, current_user: User = Depends(ge
         return APIResponse(success=True, message="Quotation created successfully", data={
             "quotation_id": quotation.id,
             "id": quotation.id,
-            "quotation_number": quotation_number
+            "quotation_number": quotation_number,
+            "status": quotation.status
         })
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
