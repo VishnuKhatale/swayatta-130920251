@@ -66,7 +66,11 @@ const ServiceDeliveryDetails = () => {
       }
     } catch (error) {
       console.error('Error loading review details:', error);
-      toast.error('Failed to load project details');
+      toast({
+        title: "Error",
+        description: "Failed to load project details",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
