@@ -1087,9 +1087,9 @@ const EnhancedOpportunityManagement = () => {
   // Check if current user can approve quotations
   const canApproveQuotations = () => {
     // Check if user has admin or approval permissions
-    // This should be based on your actual role/permission system
-    const userRole = currentUser?.role?.name || currentUser?.role;
-    return ['Admin', 'Commercial Approver', 'Sales Manager'].includes(userRole);
+    const userRole = currentUser?.role?.name || currentUser?.role || currentUser?.role_name;
+    const allowedRoles = ['Admin', 'Commercial Approver', 'Sales Manager'];
+    return allowedRoles.includes(userRole);
   };
 
   // Fetch product catalog
