@@ -1833,6 +1833,18 @@ const EnhancedOpportunityManagement = () => {
                               <p className="text-sm text-gray-500">
                                 Valid until: {quotation.validity_date ? new Date(quotation.validity_date).toLocaleDateString() : 'N/A'}
                               </p>
+                              {quotation.status === 'submitted' && canApproveQuotations() && (
+                                <Button
+                                  type="button"
+                                  variant="default"
+                                  size="sm"
+                                  onClick={(event) => approveQuotation(quotation.id, event)}
+                                  className="bg-green-600 hover:bg-green-700 text-white mt-2"
+                                >
+                                  <CheckCircle className="h-4 w-4 mr-1" />
+                                  Approve
+                                </Button>
+                              )}
                             </div>
                           </div>
                         </div>
