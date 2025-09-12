@@ -832,7 +832,7 @@ const OpportunityManagement = () => {
     }
 
     // Hide role-gated fields for non-authorized users (commercial decision)
-    if (field.roleGated && !userPermissions.can_approve) {
+    if (field.roleGated && !canAccessRoleGatedField()) {
       return (
         <div className="p-3 bg-gray-100 border rounded-md">
           <span className="text-gray-500 italic">Restricted to Admin/Sales Manager/Commercial Approver only</span>
