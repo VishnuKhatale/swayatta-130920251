@@ -135,7 +135,11 @@ const ServiceDelivery = () => {
       }
     } catch (error) {
       console.error('Error loading active projects:', error);
-      toast.error('Failed to load active projects');
+      toast({
+        title: "Error",
+        description: "Failed to load active projects",
+        variant: "destructive"
+      });
     } finally {
       setLoading(prev => ({ ...prev, projects: false }));
     }
