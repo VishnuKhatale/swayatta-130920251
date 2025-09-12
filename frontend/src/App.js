@@ -16,6 +16,8 @@ import LeadManagement from './components/LeadManagement';
 import OpportunityManagement from './components/OpportunityManagement';
 import EnhancedOpportunityManagement from './components/EnhancedOpportunityManagement';
 import QuotationManagement from './components/QuotationManagement';
+import ServiceDelivery from './components/ServiceDelivery';
+import ServiceDeliveryDetails from './components/ServiceDeliveryDetails';
 
 import MasterDataManagement from './components/MasterDataManagement';
 import ProtectedComponent from './components/ProtectedComponent';
