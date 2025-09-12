@@ -21,7 +21,8 @@ import {
   AlertTriangle,
   ArrowRight,
   Download,
-  RefreshCw
+  RefreshCw,
+  Plus
 } from 'lucide-react';
 
 // UI Components
