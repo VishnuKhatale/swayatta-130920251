@@ -125,7 +125,10 @@ const ServiceDeliveryDetails = () => {
       });
       
       if (response.data.success) {
-        toast.success('Opportunity rejected successfully');
+        toast({
+          title: "Success",
+          description: "Opportunity rejected successfully"
+        });
         navigate('/service-delivery?tab=upcoming');
       }
     } catch (error) {
