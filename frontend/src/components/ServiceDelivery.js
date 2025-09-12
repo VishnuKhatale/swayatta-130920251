@@ -113,7 +113,11 @@ const ServiceDelivery = () => {
       }
     } catch (error) {
       console.error('Error loading upcoming projects:', error);
-      toast.error('Failed to load upcoming projects');
+      toast({
+        title: "Error",
+        description: "Failed to load upcoming projects",
+        variant: "destructive"
+      });
     } finally {
       setLoading(prev => ({ ...prev, upcoming: false }));
     }
