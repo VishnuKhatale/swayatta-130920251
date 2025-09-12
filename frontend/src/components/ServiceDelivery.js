@@ -266,6 +266,31 @@ const ServiceDelivery = () => {
     navigate(`/service-delivery/upcoming/${sdrId}/details`);
   };
 
+  // Trigger SDR creation for L6 opportunities
+  const triggerSDRCreation = async (opportunityId) => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/api/service-delivery/auto-initiate/${opportunityId}`, {}, {
+        headers: getAuthHeaders()
+      });
+      
+      if (response.data.success) {
+        toast({
+          title: "Success",
+          description: "Service Delivery Request created successfully!"
+        });
+        loadUpcomingProjects(); // Refresh the list
+      }
+    } catch (error) {
+      console.error('Error creating SDR:', error);
+      const errorMessage = error.response?.data?.detail || 'Failed to create Service Delivery Request';
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive"
+      });
+    }
+  };
+
   // Filter functions
   const getFilteredData = (data) => {
     let filtered = data;
@@ -275,13 +300,20 @@ const ServiceDelivery = () => {
       filtered = filtered.filter(item => 
         item.opportunity_title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.client_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.sd_request_id?.toLowerCase().includes(searchTerm.toLowerCase())
+        item.sd_request_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.current_stage_name?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
     
-    // Status filter
+    // Status/Type filter
     if (statusFilter !== 'all') {
-      filtered = filtered.filter(item => item.approval_status === statusFilter);
+      if (statusFilter === 'service_delivery_request' || statusFilter === 'sales_opportunity') {
+        filtered = filtered.filter(item => item.item_type === statusFilter);
+      } else if (['High', 'Medium', 'Low'].includes(statusFilter)) {
+        filtered = filtered.filter(item => item.priority === statusFilter);
+      } else {
+        filtered = filtered.filter(item => item.approval_status === statusFilter);
+      }
     }
     
     return filtered;
