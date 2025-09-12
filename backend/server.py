@@ -9988,6 +9988,14 @@ async def update_opportunity_stage(
         
         await db.opportunity_stage_history.insert_one(stage_history)
         
+        # Auto-initiate Service Delivery if opportunity reaches L6 (Won)
+        if stage_id == "L6":
+            try:
+                await auto_initiate_service_delivery(opportunity_id, current_user.id)
+            except Exception as e:
+                # Log error but don't fail the stage update
+                print(f"Warning: Failed to auto-initiate Service Delivery for opportunity {opportunity_id}: {str(e)}")
+        
         return APIResponse(success=True, message="Stage updated successfully", data=update_data)
         
     except HTTPException:
