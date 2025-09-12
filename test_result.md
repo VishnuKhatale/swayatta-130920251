@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Enhanced Opportunity Management Module - L3→L4 Stage Transition 500 Error & File Upload Persistence Issues"
+user_problem_statement: "Comprehensive Create User Form Testing - Bug Investigation: Users cannot type in Create New User form fields"
 
 backend:
   - task: "🎯 Opportunity Management System Phase 1 Backend APIs - COMPREHENSIVE TESTING"
