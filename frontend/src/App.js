@@ -1036,6 +1036,9 @@ function App() {
                 <ServiceDeliveryDetails />
               </ProtectedRoute>
             } />
+            
+            {/* Test Input Route for debugging */}
+            <Route path="/test-input" element={<TestInput />} />
             {/* Unified Opportunity Management Routes */}
             <Route path="/opportunities/new" element={
               <ProtectedRoute>
