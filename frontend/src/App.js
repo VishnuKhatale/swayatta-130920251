@@ -18,6 +18,7 @@ import EnhancedOpportunityManagement from './components/EnhancedOpportunityManag
 import QuotationManagement from './components/QuotationManagement';
 import ServiceDelivery from './components/ServiceDelivery';
 import ServiceDeliveryDetails from './components/ServiceDeliveryDetails';
+import TestInput from './components/TestInput';
 
 import MasterDataManagement from './components/MasterDataManagement';
 import ProtectedComponent from './components/ProtectedComponent';
