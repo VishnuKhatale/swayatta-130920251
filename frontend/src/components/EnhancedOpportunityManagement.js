@@ -1836,17 +1836,23 @@ const EnhancedOpportunityManagement = () => {
                                 </p>
                               </div>
 
-                              {/* Approval button for Admin, Commercial Approver, Sales Manager */}
-                              {(quotation.status === 'submitted' || quotation.status === 'Unapproved') && canApproveQuotations() && (
-                                <Button
-                                  variant="default"
-                                  size="sm"
-                                  onClick={(event) => approveQuotation(quotation.id, event)}
-                                  className="bg-green-600 hover:bg-green-700 text-white ml-2"
-                                >
-                                  <CheckCircle className="h-4 w-4 mr-1" />
-                                  Approve
-                                </Button>
+                              {/* Status Dropdown for Admin, Commercial Approver, Sales Manager */}
+                              {canApproveQuotations() && (
+                                <div className="ml-2" onClick={(e) => e.stopPropagation()}>
+                                  <Select 
+                                    value={quotation.status} 
+                                    onValueChange={(value) => handleQuotationStatusChange(quotation.id, value)}
+                                  >
+                                    <SelectTrigger className="w-32">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="Draft">Draft</SelectItem>
+                                      <SelectItem value="Unapproved">Unapproved</SelectItem>
+                                      <SelectItem value="Approved">Approved</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
                               )}
                             </div>
                           </div>
