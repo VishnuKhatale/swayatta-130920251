@@ -42,7 +42,7 @@ import { useToast } from './hooks/use-toast';
 import { Toaster } from './components/ui/toaster';
 
 // Icons
-import { Menu, Users, UserPlus, Settings, LogOut, Shield, Building, Activity, Eye, Edit, Trash2, Plus, Key, Settings2, FolderTree, BarChart3, ChevronDown, ChevronRight, ShoppingCart, Handshake, Building2, Target, TrendingUp } from 'lucide-react';
+import { Menu, Users, UserPlus, Settings, LogOut, Shield, Building, Activity, Eye, Edit, Trash2, Plus, Key, Settings2, FolderTree, BarChart3, ChevronDown, ChevronRight, ShoppingCart, Handshake, Building2, Target, TrendingUp, Truck } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
