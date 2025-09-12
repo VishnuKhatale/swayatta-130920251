@@ -10342,16 +10342,22 @@ async def get_project_review_details(sdr_id: str, current_user: User = Depends(g
             }).to_list(100)
             
             for phase in phases:
+                phase.pop("_id", None)
                 groups = await db.quotation_groups.find({
                     "phase_id": phase["id"],
                     "is_deleted": False
                 }).to_list(100)
                 
                 for group in groups:
+                    group.pop("_id", None)
                     items = await db.quotation_items.find({
                         "group_id": group["id"],
                         "is_deleted": False
                     }).to_list(100)
+                    
+                    for item in items:
+                        item.pop("_id", None)
+                    
                     group["items"] = items
                 
                 phase["groups"] = groups
