@@ -3193,7 +3193,8 @@ async def initialize_database():
             {"name": "Partners", "path": "/partners"},
             {"name": "Companies", "path": "/companies"},
             {"name": "Leads", "path": "/leads"},
-            {"name": "Opportunities", "path": "/opportunities"}
+            {"name": "Opportunities", "path": "/opportunities"},
+            {"name": "Service Delivery", "path": "/service-delivery"}
         ]
         
         menu_ids = {}
