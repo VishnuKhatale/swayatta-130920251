@@ -157,7 +157,11 @@ const ServiceDelivery = () => {
       }
     } catch (error) {
       console.error('Error loading completed projects:', error);
-      toast.error('Failed to load completed projects');
+      toast({
+        title: "Error",
+        description: "Failed to load completed projects",
+        variant: "destructive"
+      });
     } finally {
       setLoading(prev => ({ ...prev, completed: false }));
     }
