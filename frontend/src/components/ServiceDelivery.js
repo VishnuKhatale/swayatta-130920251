@@ -179,7 +179,11 @@ const ServiceDelivery = () => {
       }
     } catch (error) {
       console.error('Error loading delivery logs:', error);
-      toast.error('Failed to load delivery logs');
+      toast({
+        title: "Error",
+        description: "Failed to load delivery logs",
+        variant: "destructive"
+      });
     } finally {
       setLoading(prev => ({ ...prev, logs: false }));
     }
