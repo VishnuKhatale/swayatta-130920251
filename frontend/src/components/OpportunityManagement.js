@@ -282,6 +282,7 @@ const OpportunityManagement = () => {
       loadOpportunity();
       loadQuotations();
       loadUserPermissions();
+      loadCurrentUser();
     }
     loadMasterData();
   }, [opportunityId, isCreateMode]);
