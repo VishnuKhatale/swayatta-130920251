@@ -684,6 +684,12 @@ const ServiceDelivery = () => {
   const renderAnalytics = () => {
     const { status_distribution, delivery_distribution, metrics } = analytics;
     
+    // Calculate pipeline metrics from upcoming projects
+    const sdrCount = upcomingProjects.filter(p => p.item_type === 'service_delivery_request').length;
+    const salesCount = upcomingProjects.filter(p => p.item_type === 'sales_opportunity').length;
+    const highPriorityCount = upcomingProjects.filter(p => p.priority === 'High').length;
+    const l6OpportunityCount = upcomingProjects.filter(p => p.current_stage_id === 'L6' && p.item_type === 'sales_opportunity').length;
+    
     return (
       <div className="space-y-6">
         <div className="flex justify-between items-center">
@@ -704,47 +710,96 @@ const ServiceDelivery = () => {
             <RefreshCw className="h-6 w-6 animate-spin text-gray-400" />
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Status Distribution */}
-            {status_distribution && (
-              <>
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-gray-600">Upcoming Projects</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-yellow-600">{status_distribution.upcoming || 0}</div>
-                  </CardContent>
-                </Card>
+          <div className="space-y-6">
+            {/* Pipeline Overview */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-600">Service Delivery Requests</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-blue-600">{sdrCount}</div>
+                  <p className="text-xs text-gray-500">Ready for delivery</p>
+                </CardContent>
+              </Card>
 
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-gray-600">Active Projects</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-blue-600">{status_distribution.projects || 0}</div>
-                  </CardContent>
-                </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-600">Sales Pipeline</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-orange-600">{salesCount}</div>
+                  <p className="text-xs text-gray-500">In sales process</p>
+                </CardContent>
+              </Card>
 
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-gray-600">Completed Projects</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-green-600">{status_distribution.completed || 0}</div>
-                  </CardContent>
-                </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-600">High Priority</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-red-600">{highPriorityCount}</div>
+                  <p className="text-xs text-gray-500">Requires attention</p>
+                </CardContent>
+              </Card>
 
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-gray-600">Completion Rate</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-purple-600">{metrics?.completion_rate || 0}%</div>
-                  </CardContent>
-                </Card>
-              </>
-            )}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-600">Ready for SDR</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-green-600">{l6OpportunityCount}</div>
+                  <p className="text-xs text-gray-500">L6 Won opportunities</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Service Delivery Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {status_distribution && (
+                <>
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium text-gray-600">Upcoming Projects</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-yellow-600">{status_distribution.upcoming || 0}</div>
+                      <p className="text-xs text-gray-500">Awaiting approval</p>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium text-gray-600">Active Projects</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-blue-600">{status_distribution.projects || 0}</div>
+                      <p className="text-xs text-gray-500">In delivery</p>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium text-gray-600">Completed Projects</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-green-600">{status_distribution.completed || 0}</div>
+                      <p className="text-xs text-gray-500">Successfully delivered</p>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium text-gray-600">Completion Rate</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-purple-600">{metrics?.completion_rate || 0}%</div>
+                      <p className="text-xs text-gray-500">Delivery success rate</p>
+                    </CardContent>
+                  </Card>
+                </>
+              )}
+            </div>
           </div>
         )}
       </div>
