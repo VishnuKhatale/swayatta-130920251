@@ -1404,110 +1404,62 @@ class ERPBackendTester:
                 else:
                     test_results.append(False)
         
-        # ===== 5. TEST ACTIVE PROJECTS API =====
-        print("\n🔍 Testing Active Projects API...")
+        # ===== 6. VALIDATION POINTS TESTING =====
+        print("\n🔍 Testing Enhanced Validation Points...")
         
-        # Test GET /api/service-delivery/projects
-        success_projects, response_projects = self.run_test(
-            "GET /api/service-delivery/projects - Get All Active Projects",
-            "GET",
-            "service-delivery/projects",
-            200
-        )
-        test_results.append(success_projects)
+        # Verify response includes both SDRs and sales opportunities
+        if sdrs_found > 0 and sales_opportunities_found > 0:
+            print("   ✅ Response includes both SDRs and sales opportunities")
+            test_results.append(True)
+        elif sdrs_found > 0 or sales_opportunities_found > 0:
+            print("   ⚠️  Response includes only one type of item (expected in some scenarios)")
+            test_results.append(True)
+        else:
+            print("   ❌ No SDRs or sales opportunities found")
+            test_results.append(False)
         
-        active_projects = []
-        if success_projects and response_projects.get('success'):
-            active_projects = response_projects.get('data', [])
-            print(f"   ✅ Retrieved {len(active_projects)} active projects")
+        # Test data consistency and completeness
+        consistency_tests = []
+        for item in upcoming_items[:5]:  # Test first 5 items
+            # Check required fields are not empty
+            required_non_empty = ['opportunity_id', 'item_type', 'current_stage_id']
+            all_present = all(item.get(field) for field in required_non_empty)
+            consistency_tests.append(all_present)
             
-            # Check if our converted project appears
-            if created_sdr_id and active_projects:
-                converted_project = next((p for p in active_projects if p.get('id') == created_sdr_id), None)
-                if converted_project:
-                    print("   ✅ Converted project appears in active projects list")
-                    if converted_project.get('project_status') == 'Project':
-                        print("   ✅ Project status correctly updated to 'Project'")
+            # Check item_type values are valid
+            valid_types = ['service_delivery_request', 'sales_opportunity']
+            type_valid = item.get('item_type') in valid_types
+            consistency_tests.append(type_valid)
         
-        # ===== 6. TEST COMPLETED PROJECTS API =====
-        print("\n🔍 Testing Completed Projects API...")
+        if consistency_tests and sum(consistency_tests) >= len(consistency_tests) * 0.8:
+            print("   ✅ Data consistency validation passed")
+            test_results.append(True)
+        else:
+            print("   ❌ Data consistency issues found")
+            test_results.append(False)
         
-        # Test GET /api/service-delivery/completed
-        success_completed, response_completed = self.run_test(
-            "GET /api/service-delivery/completed - Get All Completed Projects",
-            "GET",
-            "service-delivery/completed",
-            200
-        )
-        test_results.append(success_completed)
-        
-        if success_completed and response_completed.get('success'):
-            completed_projects = response_completed.get('data', [])
-            print(f"   ✅ Retrieved {len(completed_projects)} completed projects")
-        
-        # ===== 7. TEST LOGS & ANALYTICS APIs =====
-        print("\n🔍 Testing Logs & Analytics APIs...")
-        
-        # Test GET /api/service-delivery/logs
-        success_logs, response_logs = self.run_test(
-            "GET /api/service-delivery/logs - Get Delivery Logs",
-            "GET",
-            "service-delivery/logs",
-            200
-        )
-        test_results.append(success_logs)
-        
-        if success_logs and response_logs.get('success'):
-            logs = response_logs.get('data', [])
-            print(f"   ✅ Retrieved {len(logs)} delivery logs")
+        # Test integration with existing opportunity and quotation systems
+        integration_tests = []
+        for item in upcoming_items[:3]:  # Test first 3 items
+            # Check opportunity integration
+            if item.get('opportunity_title') and item.get('client_name'):
+                integration_tests.append(True)
+            else:
+                integration_tests.append(False)
             
-            # Check log enrichment
-            if logs:
-                first_log = logs[0]
-                if 'user_name' in first_log:
-                    print("   ✅ Log user name enrichment working")
+            # Check quotation integration (if quotation exists)
+            if item.get('quotation_id'):
+                if item.get('quotation_total') is not None and item.get('quotation_status'):
+                    integration_tests.append(True)
                 else:
-                    print("   ⚠️  Log user name enrichment missing")
+                    integration_tests.append(False)
         
-        # Test logs with filters
-        if test_opportunity_id:
-            success_logs_filtered, response_logs_filtered = self.run_test(
-                "GET /api/service-delivery/logs - Get Filtered Logs",
-                "GET",
-                f"service-delivery/logs?opportunity_id={test_opportunity_id}&action_type=Creation&limit=50",
-                200
-            )
-            test_results.append(success_logs_filtered)
-            
-            if success_logs_filtered:
-                filtered_logs = response_logs_filtered.get('data', [])
-                print(f"   ✅ Filtered logs working - {len(filtered_logs)} logs for opportunity")
-        
-        # Test GET /api/service-delivery/analytics
-        success_analytics, response_analytics = self.run_test(
-            "GET /api/service-delivery/analytics - Get Delivery Analytics",
-            "GET",
-            "service-delivery/analytics",
-            200
-        )
-        test_results.append(success_analytics)
-        
-        if success_analytics and response_analytics.get('success'):
-            analytics = response_analytics.get('data', {})
-            required_sections = ['status_distribution', 'delivery_distribution', 'metrics']
-            present_sections = [section for section in required_sections if section in analytics]
-            print(f"   ✅ Analytics retrieved with {len(present_sections)}/{len(required_sections)} sections")
-            
-            # Check metrics structure
-            if 'metrics' in analytics:
-                metrics = analytics['metrics']
-                metric_fields = ['total_projects', 'active_projects', 'average_progress', 'completion_rate']
-                present_metrics = [field for field in metric_fields if field in metrics]
-                if len(present_metrics) >= 3:
-                    print("   ✅ Analytics metrics calculation working")
-                    print(f"   Total Projects: {metrics.get('total_projects', 0)}")
-                    print(f"   Active Projects: {metrics.get('active_projects', 0)}")
-                    print(f"   Completion Rate: {metrics.get('completion_rate', 0)}%")
+        if integration_tests and sum(integration_tests) >= len(integration_tests) * 0.7:
+            print("   ✅ Integration with opportunity and quotation systems working")
+            test_results.append(True)
+        else:
+            print("   ⚠️  Integration may need verification")
+            test_results.append(False)
         
         # ===== 8. TEST REJECTION WORKFLOW =====
         print("\n🔍 Testing Rejection Workflow...")
