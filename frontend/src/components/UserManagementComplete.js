@@ -254,10 +254,13 @@ const UserManagementComplete = () => {
   };
 
   const handleInputChange = (name, value) => {
-    if (selectedUser) {
+    // Determine if we're in edit mode or create mode
+    if (isEditDialogOpen && selectedUser) {
+      // Edit mode - update selectedUser
       setSelectedUser({ ...selectedUser, [name]: value });
     } else {
-      setNewUser({ ...newUser, [name]: value });
+      // Create mode - update newUser
+      setNewUser(prev => ({ ...prev, [name]: value }));
     }
     validateField(name, value);
   };
