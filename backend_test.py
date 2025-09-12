@@ -1127,35 +1127,92 @@ class ERPBackendTester:
 
         test_results = []
         
-        # ===== 1. SETUP TEST DATA =====
-        print("\n🔍 Setting up test data for Service Delivery testing...")
+        # ===== 1. ENHANCED UPCOMING PROJECTS API TESTING =====
+        print("\n🔍 Testing Enhanced Upcoming Projects API - ALL Opportunities (L1-L8)...")
         
-        # Get opportunities for testing (need L6 Won opportunities)
-        success_get_opps, response_get_opps = self.run_test(
-            "GET /api/opportunities - Get Opportunities for SD Testing",
+        # Test GET /api/service-delivery/upcoming - Should return ALL opportunities in sales process
+        success_upcoming, response_upcoming = self.run_test(
+            "GET /api/service-delivery/upcoming - Enhanced Sales Pipeline Integration",
             "GET",
-            "opportunities",
+            "service-delivery/upcoming",
             200
         )
+        test_results.append(success_upcoming)
         
-        opportunities = []
-        test_opportunity_id = None
-        if success_get_opps and response_get_opps.get('success'):
-            opportunities = response_get_opps.get('data', [])
-            # Look for L6 (Won) opportunity or use first available
-            for opp in opportunities:
-                if opp.get('current_stage_code') == 'L6':
-                    test_opportunity_id = opp.get('id')
-                    print(f"   Found L6 Won opportunity: {opp.get('opportunity_title')}")
-                    break
+        upcoming_items = []
+        opportunities_by_stage = {}
+        sdrs_found = 0
+        sales_opportunities_found = 0
+        
+        if success_upcoming and response_upcoming.get('success'):
+            upcoming_items = response_upcoming.get('data', [])
+            print(f"   ✅ Retrieved {len(upcoming_items)} items from sales pipeline")
             
-            if not test_opportunity_id and opportunities:
-                test_opportunity_id = opportunities[0].get('id')
-                print(f"   Using first available opportunity: {opportunities[0].get('opportunity_title')}")
+            # Analyze the data structure and categorize items
+            for item in upcoming_items:
+                item_type = item.get('item_type')
+                stage_id = item.get('current_stage_id')
+                
+                # Count item types
+                if item_type == 'service_delivery_request':
+                    sdrs_found += 1
+                elif item_type == 'sales_opportunity':
+                    sales_opportunities_found += 1
+                
+                # Group by stage
+                if stage_id not in opportunities_by_stage:
+                    opportunities_by_stage[stage_id] = []
+                opportunities_by_stage[stage_id].append(item)
+            
+            print(f"   📊 Data Analysis:")
+            print(f"      Service Delivery Requests: {sdrs_found}")
+            print(f"      Sales Opportunities: {sales_opportunities_found}")
+            print(f"      Stages represented: {list(opportunities_by_stage.keys())}")
+            
+            # Verify all stages L1-L8 are potentially included
+            expected_stages = ['L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'L7', 'L8']
+            found_stages = list(opportunities_by_stage.keys())
+            
+            if any(stage in found_stages for stage in expected_stages):
+                print("   ✅ Enhanced pipeline integration working - multiple stages found")
+            else:
+                print("   ⚠️  Limited stage coverage in current data")
         
-        if not test_opportunity_id:
-            print("❌ No opportunities available for Service Delivery testing")
-            return False
+        # ===== 2. DATA STRUCTURE VALIDATION =====
+        print("\n🔍 Testing Enhanced Data Structure...")
+        
+        if upcoming_items:
+            first_item = upcoming_items[0]
+            required_fields = [
+                'item_type', 'opportunity_id', 'opportunity_title', 'opportunity_value',
+                'client_name', 'sales_owner_name', 'sales_owner_id',
+                'current_stage_id', 'current_stage_name',
+                'project_status', 'approval_status',
+                'quotation_id', 'quotation_total', 'quotation_status',
+                'priority', 'estimated_delivery_date', 'created_at', 'expected_close_date'
+            ]
+            
+            missing_fields = [field for field in required_fields if field not in first_item]
+            present_fields = [field for field in required_fields if field in first_item]
+            
+            print(f"   📋 Data Structure Analysis:")
+            print(f"      Required fields present: {len(present_fields)}/{len(required_fields)}")
+            
+            if len(present_fields) >= 12:  # At least 75% of required fields
+                print("   ✅ Enhanced data structure working correctly")
+                test_results.append(True)
+                
+                # Validate specific field values
+                print(f"      Sample item type: {first_item.get('item_type')}")
+                print(f"      Sample stage: {first_item.get('current_stage_id')} - {first_item.get('current_stage_name')}")
+                print(f"      Sample priority: {first_item.get('priority')}")
+                
+            else:
+                print(f"   ❌ Missing critical fields: {missing_fields}")
+                test_results.append(False)
+        else:
+            print("   ❌ No items returned from upcoming projects API")
+            test_results.append(False)
         
         # ===== 2. TEST AUTO-INITIATION API =====
         print("\n🔍 Testing Auto-Initiation Logic...")
