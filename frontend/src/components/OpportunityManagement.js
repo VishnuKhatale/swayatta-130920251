@@ -1421,7 +1421,7 @@ const OpportunityManagement = () => {
                       className="bg-blue-600 hover:bg-blue-700"
                     >
                       <ChevronRight className="h-4 w-4 mr-2" />
-                      Save & Continue to {stageFormData[currentStage]?.commercial_decision === 'Won' ? 'Won (L6)' : 'Lost (L7)'}
+                      Save & Continue to {stageFormData[currentStage]?.commercial_decision === 'Won' ? 'Won (L6)' : stageFormData[currentStage]?.commercial_decision === 'Reject' ? 'Lost (L7)' : 'Next Stage'}
                     </Button>
                   )}
                 </div>
