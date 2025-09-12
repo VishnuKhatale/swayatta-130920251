@@ -251,7 +251,11 @@ const ServiceDelivery = () => {
     } catch (error) {
       console.error('Error rejecting opportunity:', error);
       const errorMessage = error.response?.data?.detail || 'Failed to reject opportunity';
-      toast.error(errorMessage);
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive"
+      });
     }
   };
 
