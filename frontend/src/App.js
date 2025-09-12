@@ -252,6 +252,7 @@ const DashboardLayout = ({ children }) => {
         { name: 'Leads', path: '/leads', icon: Target },
         { name: 'Opportunities', path: '/opportunities', icon: TrendingUp },
         { name: 'Enhanced Opportunities', path: '/enhanced-opportunities', icon: TrendingUp },
+        { name: 'Quotations', path: '/quotations', icon: FileText },
         { name: 'Service Delivery', path: '/service-delivery', icon: Truck },
         { name: 'Master Data', path: '/master-data', icon: Settings2 }
       ]
