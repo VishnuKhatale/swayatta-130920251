@@ -10176,6 +10176,547 @@ async def check_internal_cost_access(current_user: User = Depends(get_current_us
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# ===== SERVICE DELIVERY (SD) MODULE APIs =====
+
+# Auto-initiation trigger for L6 opportunities
+async def auto_initiate_service_delivery(opportunity_id: str, user_id: str):
+    """Auto-initiate Service Delivery Request when opportunity reaches L6 (Won)"""
+    try:
+        # Check if SDR already exists for this opportunity
+        existing_sdr = await db.service_delivery_requests.find_one({
+            "opportunity_id": opportunity_id,
+            "is_deleted": False
+        })
+        
+        if existing_sdr:
+            return {"message": "Service Delivery Request already exists", "sdr_id": existing_sdr["id"]}
+        
+        # Get opportunity details
+        opportunity = await db.opportunities.find_one({"id": opportunity_id, "is_deleted": False})
+        if not opportunity:
+            raise HTTPException(status_code=404, detail="Opportunity not found")
+        
+        # Get approved quotation for project value
+        approved_quotation = await db.quotations.find_one({
+            "opportunity_id": opportunity_id,
+            "status": "Approved",
+            "is_deleted": False
+        })
+        
+        # Create Service Delivery Request
+        sdr = ServiceDeliveryRequest(
+            opportunity_id=opportunity_id,
+            project_value=approved_quotation.get("grand_total", 0) if approved_quotation else None,
+            client_name=opportunity.get("company_name", ""),
+            sales_owner_id=opportunity.get("opportunity_owner_id"),
+            created_by=user_id
+        )
+        
+        await db.service_delivery_requests.insert_one(sdr.dict())
+        
+        # Log the auto-initiation
+        log_entry = ServiceDeliveryLog(
+            sd_request_id=sdr.id,
+            opportunity_id=opportunity_id,
+            action_type="Creation",
+            action_description=f"Auto-initiated SDR for opportunity {opportunity.get('opportunity_title', '')}",
+            user_id=user_id,
+            user_role="System"
+        )
+        await db.service_delivery_logs.insert_one(log_entry.dict())
+        
+        return {"message": "Service Delivery Request created successfully", "sdr_id": sdr.id}
+        
+    except Exception as e:
+        # Log error
+        error_log = ServiceDeliveryLog(
+            opportunity_id=opportunity_id,
+            action_type="Creation",
+            action_status="Failed",
+            action_description=f"Failed to auto-initiate SDR: {str(e)}",
+            user_id=user_id,
+            error_message=str(e)
+        )
+        await db.service_delivery_logs.insert_one(error_log.dict())
+        raise HTTPException(status_code=500, detail=f"Failed to create Service Delivery Request: {str(e)}")
+
+# 1. Upcoming Projects APIs
+@api_router.get("/service-delivery/upcoming", response_model=APIResponse)
+@require_permission("/service-delivery", "view")
+async def get_upcoming_projects(current_user: User = Depends(get_current_user)):
+    """Get all upcoming projects for review"""
+    try:
+        # Get upcoming service delivery requests
+        sdrs = await db.service_delivery_requests.find({
+            "project_status": "Upcoming",
+            "is_deleted": False
+        }).sort("created_at", -1).to_list(1000)
+        
+        enriched_sdrs = []
+        for sdr in sdrs:
+            # Enrich with opportunity data
+            opportunity = await db.opportunities.find_one({"id": sdr["opportunity_id"], "is_deleted": False})
+            
+            # Enrich with sales owner data
+            sales_owner = None
+            if sdr.get("sales_owner_id"):
+                sales_owner = await db.users.find_one({"id": sdr["sales_owner_id"], "is_deleted": False})
+            
+            # Get approved quotation
+            approved_quotation = await db.quotations.find_one({
+                "opportunity_id": sdr["opportunity_id"],
+                "status": "Approved",
+                "is_deleted": False
+            })
+            
+            enriched_sdr = {
+                **sdr,
+                "opportunity_title": opportunity.get("opportunity_title", "") if opportunity else "",
+                "opportunity_value": opportunity.get("estimated_value", 0) if opportunity else 0,
+                "client_name": opportunity.get("company_name", "") if opportunity else sdr.get("client_name", ""),
+                "sales_owner_name": f"{sales_owner['name']}" if sales_owner else "Unassigned",
+                "quotation_id": approved_quotation.get("quotation_number", "") if approved_quotation else "",
+                "quotation_total": approved_quotation.get("grand_total", 0) if approved_quotation else 0
+            }
+            
+            # Remove MongoDB _id
+            enriched_sdr.pop("_id", None)
+            enriched_sdrs.append(enriched_sdr)
+        
+        return APIResponse(
+            success=True,
+            message="Upcoming projects retrieved successfully",
+            data=enriched_sdrs
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve upcoming projects: {str(e)}")
+
+@api_router.get("/service-delivery/upcoming/{sdr_id}/details", response_model=APIResponse)
+@require_permission("/service-delivery", "view")
+async def get_project_review_details(sdr_id: str, current_user: User = Depends(get_current_user)):
+    """Get complete review details for a service delivery request"""
+    try:
+        # Get SDR
+        sdr = await db.service_delivery_requests.find_one({"id": sdr_id, "is_deleted": False})
+        if not sdr:
+            raise HTTPException(status_code=404, detail="Service Delivery Request not found")
+        
+        # Get opportunity data
+        opportunity = await db.opportunities.find_one({"id": sdr["opportunity_id"], "is_deleted": False})
+        
+        # Get lead data (if linked)
+        lead_data = None
+        if opportunity and opportunity.get("linked_lead_id"):
+            lead_data = await db.leads.find_one({"id": opportunity["linked_lead_id"], "is_deleted": False})
+        
+        # Get approved quotation
+        approved_quotation = await db.quotations.find_one({
+            "opportunity_id": sdr["opportunity_id"],
+            "status": "Approved",
+            "is_deleted": False
+        })
+        
+        # Get quotation details (phases, groups, items)
+        quotation_details = None
+        if approved_quotation:
+            phases = await db.quotation_phases.find({
+                "quotation_id": approved_quotation["id"],
+                "is_deleted": False
+            }).to_list(100)
+            
+            for phase in phases:
+                groups = await db.quotation_groups.find({
+                    "phase_id": phase["id"],
+                    "is_deleted": False
+                }).to_list(100)
+                
+                for group in groups:
+                    items = await db.quotation_items.find({
+                        "group_id": group["id"],
+                        "is_deleted": False
+                    }).to_list(100)
+                    group["items"] = items
+                
+                phase["groups"] = groups
+            
+            quotation_details = {
+                **approved_quotation,
+                "phases": phases
+            }
+            quotation_details.pop("_id", None)
+        
+        # Get sales submission history
+        sales_history = await db.service_delivery_logs.find({
+            "opportunity_id": sdr["opportunity_id"],
+            "action_type": {"$in": ["Creation", "Review", "Approval", "Rejection"]}
+        }).sort("timestamp", -1).to_list(100)
+        
+        # Clean up data
+        sdr.pop("_id", None)
+        if opportunity:
+            opportunity.pop("_id", None)
+        if lead_data:
+            lead_data.pop("_id", None)
+        
+        review_data = {
+            "sdr": sdr,
+            "opportunity": opportunity,
+            "lead": lead_data,
+            "approved_quotation": quotation_details,
+            "sales_history": sales_history
+        }
+        
+        return APIResponse(
+            success=True,
+            message="Project review details retrieved successfully",
+            data=review_data
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve project details: {str(e)}")
+
+@api_router.post("/service-delivery/upcoming/{sdr_id}/convert", response_model=APIResponse)
+@require_permission("/service-delivery", "edit")
+async def convert_to_project(sdr_id: str, current_user: User = Depends(get_current_user)):
+    """Convert Upcoming Project to Active Project"""
+    try:
+        # Get SDR
+        sdr = await db.service_delivery_requests.find_one({"id": sdr_id, "is_deleted": False})
+        if not sdr:
+            raise HTTPException(status_code=404, detail="Service Delivery Request not found")
+        
+        if sdr["project_status"] != "Upcoming":
+            raise HTTPException(status_code=400, detail="Only Upcoming projects can be converted")
+        
+        # Update SDR status
+        update_data = {
+            "project_status": "Project",
+            "approval_status": "Approved",
+            "delivery_status": "In-Progress",
+            "modified_by": current_user.id,
+            "updated_at": datetime.now(timezone.utc)
+        }
+        
+        await db.service_delivery_requests.update_one(
+            {"id": sdr_id},
+            {"$set": update_data}
+        )
+        
+        # Create approval record
+        approval = ServiceDeliveryApproval(
+            sd_request_id=sdr_id,
+            approver_id=current_user.id,
+            approver_role="Delivery Manager",  # This could be dynamic based on user role
+            approval_status="Approved",
+            remarks="Converted to active project",
+            approved_at=datetime.now(timezone.utc),
+            created_by=current_user.id
+        )
+        await db.service_delivery_approvals.insert_one(approval.dict())
+        
+        # Log the conversion
+        log_entry = ServiceDeliveryLog(
+            sd_request_id=sdr_id,
+            opportunity_id=sdr["opportunity_id"],
+            action_type="Approval",
+            action_description="Converted Upcoming Project to Active Project",
+            user_id=current_user.id,
+            user_role="Delivery Manager"
+        )
+        await db.service_delivery_logs.insert_one(log_entry.dict())
+        
+        return APIResponse(
+            success=True,
+            message="Project converted successfully. Delivery tracking has begun."
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to convert project: {str(e)}")
+
+@api_router.post("/service-delivery/upcoming/{sdr_id}/reject", response_model=APIResponse)
+@require_permission("/service-delivery", "edit")
+async def reject_opportunity(sdr_id: str, rejection_data: dict, current_user: User = Depends(get_current_user)):
+    """Reject Opportunity - closes SD and marks for review"""
+    try:
+        # Get SDR
+        sdr = await db.service_delivery_requests.find_one({"id": sdr_id, "is_deleted": False})
+        if not sdr:
+            raise HTTPException(status_code=404, detail="Service Delivery Request not found")
+        
+        if sdr["project_status"] != "Upcoming":
+            raise HTTPException(status_code=400, detail="Only Upcoming projects can be rejected")
+        
+        rejection_reason = rejection_data.get("remarks", "No reason provided")
+        
+        # Update SDR status
+        update_data = {
+            "project_status": "Rejected",
+            "approval_status": "Rejected",
+            "rejection_reason": rejection_reason,
+            "modified_by": current_user.id,
+            "updated_at": datetime.now(timezone.utc)
+        }
+        
+        await db.service_delivery_requests.update_one(
+            {"id": sdr_id},
+            {"$set": update_data}
+        )
+        
+        # Create rejection record
+        approval = ServiceDeliveryApproval(
+            sd_request_id=sdr_id,
+            approver_id=current_user.id,
+            approver_role="Delivery Manager",
+            approval_status="Rejected",
+            remarks=rejection_reason,
+            rejection_reason=rejection_reason,
+            approved_at=datetime.now(timezone.utc),
+            created_by=current_user.id
+        )
+        await db.service_delivery_approvals.insert_one(approval.dict())
+        
+        # Log the rejection
+        log_entry = ServiceDeliveryLog(
+            sd_request_id=sdr_id,
+            opportunity_id=sdr["opportunity_id"],
+            action_type="Rejection",
+            action_description=f"Opportunity rejected: {rejection_reason}",
+            user_id=current_user.id,
+            user_role="Delivery Manager"
+        )
+        await db.service_delivery_logs.insert_one(log_entry.dict())
+        
+        return APIResponse(
+            success=True,
+            message="Opportunity rejected successfully. SD closed for delivery."
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to reject opportunity: {str(e)}")
+
+# 2. Active Projects APIs
+@api_router.get("/service-delivery/projects", response_model=APIResponse)
+@require_permission("/service-delivery", "view")
+async def get_active_projects(current_user: User = Depends(get_current_user)):
+    """Get all active delivery projects"""
+    try:
+        projects = await db.service_delivery_requests.find({
+            "project_status": "Project",
+            "is_deleted": False
+        }).sort("created_at", -1).to_list(1000)
+        
+        enriched_projects = []
+        for project in projects:
+            # Enrich with opportunity data
+            opportunity = await db.opportunities.find_one({"id": project["opportunity_id"], "is_deleted": False})
+            
+            # Enrich with delivery owner
+            delivery_owner = None
+            if project.get("delivery_owner_id"):
+                delivery_owner = await db.users.find_one({"id": project["delivery_owner_id"], "is_deleted": False})
+            
+            enriched_project = {
+                **project,
+                "opportunity_title": opportunity.get("opportunity_title", "") if opportunity else "",
+                "delivery_owner_name": delivery_owner.get("name", "Unassigned") if delivery_owner else "Unassigned"
+            }
+            
+            enriched_project.pop("_id", None)
+            enriched_projects.append(enriched_project)
+        
+        return APIResponse(
+            success=True,
+            message="Active projects retrieved successfully",
+            data=enriched_projects
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve active projects: {str(e)}")
+
+# 3. Completed Projects APIs
+@api_router.get("/service-delivery/completed", response_model=APIResponse)
+@require_permission("/service-delivery", "view")
+async def get_completed_projects(current_user: User = Depends(get_current_user)):
+    """Get all completed projects"""
+    try:
+        completed_projects = await db.service_delivery_requests.find({
+            "project_status": "Completed",
+            "is_deleted": False
+        }).sort("updated_at", -1).to_list(1000)
+        
+        enriched_projects = []
+        for project in completed_projects:
+            # Enrich with opportunity data
+            opportunity = await db.opportunities.find_one({"id": project["opportunity_id"], "is_deleted": False})
+            
+            enriched_project = {
+                **project,
+                "opportunity_title": opportunity.get("opportunity_title", "") if opportunity else ""
+            }
+            
+            enriched_project.pop("_id", None)
+            enriched_projects.append(enriched_project)
+        
+        return APIResponse(
+            success=True,
+            message="Completed projects retrieved successfully",
+            data=enriched_projects
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve completed projects: {str(e)}")
+
+# 4. Service Delivery Logs APIs
+@api_router.get("/service-delivery/logs", response_model=APIResponse)
+@require_permission("/service-delivery", "view")
+async def get_delivery_logs(
+    current_user: User = Depends(get_current_user),
+    opportunity_id: Optional[str] = None,
+    action_type: Optional[str] = None,
+    limit: int = 100
+):
+    """Get delivery logs with optional filters"""
+    try:
+        # Build query
+        query = {"is_active": True}
+        if opportunity_id:
+            query["opportunity_id"] = opportunity_id
+        if action_type:
+            query["action_type"] = action_type
+        
+        logs = await db.service_delivery_logs.find(query).sort("timestamp", -1).limit(limit).to_list(limit)
+        
+        # Enrich with user names
+        enriched_logs = []
+        for log in logs:
+            user = await db.users.find_one({"id": log["user_id"], "is_deleted": False})
+            
+            enriched_log = {
+                **log,
+                "user_name": user.get("name", "Unknown") if user else "Unknown"
+            }
+            
+            enriched_log.pop("_id", None)
+            enriched_logs.append(enriched_log)
+        
+        return APIResponse(
+            success=True,
+            message="Delivery logs retrieved successfully",
+            data=enriched_logs
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve delivery logs: {str(e)}")
+
+# 5. Reports & Analytics APIs
+@api_router.get("/service-delivery/analytics", response_model=APIResponse)
+@require_permission("/service-delivery", "view")
+async def get_delivery_analytics(current_user: User = Depends(get_current_user)):
+    """Get delivery analytics and metrics"""
+    try:
+        # Count by status
+        upcoming_count = await db.service_delivery_requests.count_documents({
+            "project_status": "Upcoming",
+            "is_deleted": False
+        })
+        
+        projects_count = await db.service_delivery_requests.count_documents({
+            "project_status": "Project",
+            "is_deleted": False
+        })
+        
+        completed_count = await db.service_delivery_requests.count_documents({
+            "project_status": "Completed",
+            "is_deleted": False
+        })
+        
+        rejected_count = await db.service_delivery_requests.count_documents({
+            "project_status": "Rejected",
+            "is_deleted": False
+        })
+        
+        # Get delivery status distribution
+        in_progress_count = await db.service_delivery_requests.count_documents({
+            "delivery_status": "In-Progress",
+            "is_deleted": False
+        })
+        
+        partial_count = await db.service_delivery_requests.count_documents({
+            "delivery_status": "Partial",
+            "is_deleted": False
+        })
+        
+        # Calculate average delivery progress for active projects
+        active_projects = await db.service_delivery_requests.find({
+            "project_status": "Project",
+            "is_deleted": False
+        }).to_list(1000)
+        
+        avg_progress = 0
+        if active_projects:
+            total_progress = sum(project.get("delivery_progress", 0) for project in active_projects)
+            avg_progress = total_progress / len(active_projects)
+        
+        analytics_data = {
+            "status_distribution": {
+                "upcoming": upcoming_count,
+                "projects": projects_count,
+                "completed": completed_count,
+                "rejected": rejected_count
+            },
+            "delivery_distribution": {
+                "in_progress": in_progress_count,
+                "partial": partial_count,
+                "completed": completed_count
+            },
+            "metrics": {
+                "total_projects": upcoming_count + projects_count + completed_count + rejected_count,
+                "active_projects": projects_count,
+                "average_progress": round(avg_progress, 2),
+                "completion_rate": round((completed_count / max(1, completed_count + projects_count)) * 100, 2)
+            }
+        }
+        
+        return APIResponse(
+            success=True,
+            message="Delivery analytics retrieved successfully",
+            data=analytics_data
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve delivery analytics: {str(e)}")
+
+# Auto-trigger integration with opportunity status changes
+@api_router.post("/service-delivery/auto-initiate/{opportunity_id}", response_model=APIResponse)
+async def trigger_auto_initiation(opportunity_id: str, current_user: User = Depends(get_current_user)):
+    """Manual trigger for auto-initiation (for testing/admin purposes)"""
+    try:
+        result = await auto_initiate_service_delivery(opportunity_id, current_user.id)
+        return APIResponse(success=True, message=result["message"], data={"sdr_id": result["sdr_id"]})
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ===== END SERVICE DELIVERY MODULE APIs =====
+
 # ===== COMPANY MANAGEMENT MODULE - ENHANCED MASTER DATA APIs =====
 
 # Business Type Master
