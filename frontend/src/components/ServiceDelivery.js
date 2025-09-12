@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
-import { toast } from 'react-hot-toast';
+import { useToast } from '../hooks/use-toast';
 import {
   Building2,
   Calendar,
