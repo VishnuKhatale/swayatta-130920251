@@ -30,6 +30,7 @@ import { Separator } from './ui/separator';
 const ServiceDeliveryDetails = () => {
   const { sdrId } = useParams();
   const navigate = useNavigate();
+  const { toast } = useToast();
   
   // State management
   const [loading, setLoading] = useState(true);
