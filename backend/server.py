@@ -10258,12 +10258,11 @@ async def auto_initiate_service_delivery(opportunity_id: str, user_id: str):
 @api_router.get("/service-delivery/upcoming", response_model=APIResponse)
 @require_permission("/service-delivery", "view")
 async def get_upcoming_projects(current_user: User = Depends(get_current_user)):
-    """Get all opportunities in sales process and upcoming service delivery requests"""
+    """Get all opportunities from enhanced-opportunities data source for service delivery pipeline"""
     try:
-        # Get all active opportunities in sales process (L1-L8)
+        # Use the same data source as enhanced-opportunities
         opportunities = await db.opportunities.find({
-            "is_deleted": False,
-            "current_stage_id": {"$in": ["L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8"]}
+            "is_deleted": False
         }).sort("created_at", -1).to_list(1000)
         
         enriched_items = []
@@ -10275,7 +10274,7 @@ async def get_upcoming_projects(current_user: User = Depends(get_current_user)):
                 "is_deleted": False
             })
             
-            # Get sales owner data
+            # Get sales owner data using the same field names as enhanced-opportunities
             sales_owner = None
             if opportunity.get("opportunity_owner_id"):
                 sales_owner = await db.users.find_one({"id": opportunity["opportunity_owner_id"], "is_deleted": False})
@@ -10309,15 +10308,30 @@ async def get_upcoming_projects(current_user: User = Depends(get_current_user)):
                 sdr_id = None
                 sd_request_id = ""
             
-            # Determine stage status
-            stage_id = opportunity.get("current_stage_id", "L1")
-            stage_name = opportunity.get("current_stage_name", stage_id)
+            # Use the same stage mapping as enhanced-opportunities
+            stage_id = opportunity.get("current_stage_name", "L1")  # Enhanced opportunities uses current_stage_name
+            
+            # Pipeline stages mapping (same as enhanced-opportunities)
+            pipeline_stages = {
+                'L1': {'name': 'Prospect', 'probability': 10},
+                'L2': {'name': 'Qualification', 'probability': 25},
+                'L3': {'name': 'Proposal/Bid', 'probability': 40},
+                'L4': {'name': 'Technical Qualification', 'probability': 60},
+                'L5': {'name': 'Commercial Negotiations', 'probability': 75},
+                'L6': {'name': 'Won', 'probability': 100},
+                'L7': {'name': 'Lost', 'probability': 0},
+                'L8': {'name': 'Dropped', 'probability': 0}
+            }
+            
+            stage_info = pipeline_stages.get(stage_id, {'name': 'Prospect', 'probability': 10})
+            stage_name = stage_info['name']
+            probability = stage_info['probability']
             
             # Calculate estimated delivery date based on stage
             estimated_delivery_date = None
             if stage_id in ["L6", "L7", "L8"]:
                 # For won/lost/dropped opportunities, estimate based on close date
-                close_date = opportunity.get("expected_close_date")
+                close_date = opportunity.get("expected_closure_date")  # Enhanced opportunities uses expected_closure_date
                 if close_date:
                     from datetime import datetime, timedelta
                     try:
@@ -10326,12 +10340,13 @@ async def get_upcoming_projects(current_user: User = Depends(get_current_user)):
                     except:
                         pass
             
+            # Use the same field names as enhanced-opportunities
             enriched_item = {
                 "id": sdr_id or opportunity["id"],
                 "sd_request_id": sd_request_id,
                 "opportunity_id": opportunity["id"],
                 "opportunity_title": opportunity.get("opportunity_title", ""),
-                "opportunity_value": opportunity.get("estimated_value", 0),
+                "opportunity_value": opportunity.get("expected_revenue", 0),  # Enhanced opportunities uses expected_revenue
                 "client_name": opportunity.get("company_name", ""),
                 "sales_owner_name": sales_owner.get("name", "Unassigned") if sales_owner else "Unassigned",
                 "sales_owner_id": opportunity.get("opportunity_owner_id"),
@@ -10340,31 +10355,34 @@ async def get_upcoming_projects(current_user: User = Depends(get_current_user)):
                 "quotation_status": approved_quotation.get("status", "") if approved_quotation else "",
                 "current_stage_id": stage_id,
                 "current_stage_name": stage_name,
+                "probability": probability,
+                "opportunity_type": opportunity.get("opportunity_type", ""),
+                "state": opportunity.get("state", "Open"),
                 "item_type": item_type,
                 "project_status": item_status,
                 "approval_status": approval_status,
                 "estimated_delivery_date": estimated_delivery_date,
-                "expected_close_date": opportunity.get("expected_close_date"),
+                "expected_close_date": opportunity.get("expected_closure_date"),
                 "created_at": existing_sdr.get("created_at") if existing_sdr else opportunity.get("created_at"),
                 "priority": "High" if stage_id in ["L5", "L6"] else "Medium" if stage_id in ["L3", "L4"] else "Low"
             }
             
             enriched_items.append(enriched_item)
         
-        # Sort by priority and stage progression
+        # Sort by priority and stage progression (same as enhanced-opportunities logic)
         stage_order = {"L6": 1, "L5": 2, "L4": 3, "L3": 4, "L2": 5, "L1": 6, "L7": 7, "L8": 8}
         enriched_items.sort(key=lambda x: (stage_order.get(x["current_stage_id"], 99), x["created_at"]))
         
         return APIResponse(
             success=True,
-            message="Sales pipeline and upcoming projects retrieved successfully",
+            message="Enhanced opportunities data retrieved for service delivery pipeline",
             data=enriched_items
         )
         
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to retrieve upcoming projects: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve enhanced opportunities data: {str(e)}")
 
 @api_router.get("/service-delivery/upcoming/{sdr_id}/details", response_model=APIResponse)
 @require_permission("/service-delivery", "view")
