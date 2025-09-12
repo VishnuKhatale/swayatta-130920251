@@ -291,13 +291,20 @@ const ServiceDelivery = () => {
   const renderUpcomingProjects = () => {
     const filteredProjects = getFilteredData(upcomingProjects);
     
+    // Group projects by type
+    const sdrProjects = filteredProjects.filter(p => p.item_type === 'service_delivery_request');
+    const salesOpportunities = filteredProjects.filter(p => p.item_type === 'sales_opportunity');
+    
     return (
-      <div className="space-y-4">
+      <div className="space-y-6">
         {/* Header and Filters */}
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-4">
-            <h2 className="text-xl font-semibold">Upcoming Projects</h2>
-            <Badge variant="secondary">{filteredProjects.length} projects</Badge>
+            <h2 className="text-xl font-semibold">Sales Pipeline & Upcoming Projects</h2>
+            <div className="flex space-x-2">
+              <Badge variant="secondary">{sdrProjects.length} SDRs</Badge>
+              <Badge variant="outline">{salesOpportunities.length} in Sales</Badge>
+            </div>
           </div>
           <Button 
             onClick={() => loadUpcomingProjects()} 
@@ -315,7 +322,7 @@ const ServiceDelivery = () => {
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
-              placeholder="Search by project name, client, or SDR ID..."
+              placeholder="Search by opportunity name, client, or stage..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -323,13 +330,15 @@ const ServiceDelivery = () => {
           </div>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-48">
-              <SelectValue placeholder="Filter by status" />
+              <SelectValue placeholder="Filter by type" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="Pending">Pending</SelectItem>
-              <SelectItem value="Approved">Approved</SelectItem>
-              <SelectItem value="Rejected">Rejected</SelectItem>
+              <SelectItem value="all">All Items</SelectItem>
+              <SelectItem value="service_delivery_request">SDRs Only</SelectItem>
+              <SelectItem value="sales_opportunity">Sales Process Only</SelectItem>
+              <SelectItem value="High">High Priority</SelectItem>
+              <SelectItem value="Medium">Medium Priority</SelectItem>
+              <SelectItem value="Low">Low Priority</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -344,92 +353,198 @@ const ServiceDelivery = () => {
             <CardContent className="flex flex-col items-center justify-center py-8">
               <Package className="h-12 w-12 text-gray-400 mb-4" />
               <p className="text-gray-500 text-center">
-                {upcomingProjects.length === 0 ? 'No upcoming projects found' : 'No projects match your filters'}
+                {upcomingProjects.length === 0 ? 'No opportunities or projects found' : 'No items match your filters'}
               </p>
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-4">
-            {filteredProjects.map((project) => (
-              <Card key={project.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-4 mb-2">
-                        <h3 className="font-semibold text-lg">{project.opportunity_title || 'Untitled Project'}</h3>
-                        <Badge 
-                          className={
-                            project.approval_status === 'Approved' ? 'bg-green-100 text-green-800' :
-                            project.approval_status === 'Rejected' ? 'bg-red-100 text-red-800' :
-                            'bg-yellow-100 text-yellow-800'
-                          }
-                        >
-                          {project.approval_status}
-                        </Badge>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600">
-                        <div>
-                          <span className="font-medium">SDR ID:</span>
-                          <p>{project.sd_request_id}</p>
-                        </div>
-                        <div>
-                          <span className="font-medium">Client:</span>
-                          <p>{project.client_name || 'N/A'}</p>
-                        </div>
-                        <div>
-                          <span className="font-medium">Sales Owner:</span>
-                          <p>{project.sales_owner_name || 'Unassigned'}</p>
-                        </div>
-                        <div>
-                          <span className="font-medium">Project Value:</span>
-                          <p>${project.quotation_total?.toLocaleString() || '0'}</p>
-                        </div>
-                      </div>
-                    </div>
+          <div className="space-y-6">
+            {/* Service Delivery Requests Section */}
+            {sdrProjects.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold mb-4 text-blue-600">Service Delivery Requests ({sdrProjects.length})</h3>
+                <div className="grid gap-4">
+                  {sdrProjects.map((project) => (
+                    <Card key={project.id} className="hover:shadow-md transition-shadow border-l-4 border-l-blue-500">
+                      <CardContent className="p-6">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-4 mb-3">
+                              <h4 className="font-semibold text-lg">{project.opportunity_title || 'Untitled Project'}</h4>
+                              <Badge className="bg-blue-100 text-blue-800">
+                                SDR: {project.sd_request_id}
+                              </Badge>
+                              <Badge 
+                                className={
+                                  project.approval_status === 'Approved' ? 'bg-green-100 text-green-800' :
+                                  project.approval_status === 'Rejected' ? 'bg-red-100 text-red-800' :
+                                  'bg-yellow-100 text-yellow-800'
+                                }
+                              >
+                                {project.approval_status}
+                              </Badge>
+                              <Badge variant="outline" className={
+                                project.priority === 'High' ? 'border-red-300 text-red-700' :
+                                project.priority === 'Medium' ? 'border-yellow-300 text-yellow-700' :
+                                'border-gray-300 text-gray-700'
+                              }>
+                                {project.priority}
+                              </Badge>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm text-gray-600">
+                              <div>
+                                <span className="font-medium">Client:</span>
+                                <p>{project.client_name || 'N/A'}</p>
+                              </div>
+                              <div>
+                                <span className="font-medium">Sales Owner:</span>
+                                <p>{project.sales_owner_name || 'Unassigned'}</p>
+                              </div>
+                              <div>
+                                <span className="font-medium">Current Stage:</span>
+                                <p>{project.current_stage_name}</p>
+                              </div>
+                              <div>
+                                <span className="font-medium">Value:</span>
+                                <p>${project.quotation_total?.toLocaleString() || project.opportunity_value?.toLocaleString() || '0'}</p>
+                              </div>
+                              <div>
+                                <span className="font-medium">Expected Delivery:</span>
+                                <p>{project.estimated_delivery_date || 'TBD'}</p>
+                              </div>
+                            </div>
+                          </div>
 
-                    <div className="flex items-center space-x-2 ml-4">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleViewDetails(project.id)}
-                      >
-                        <Eye className="h-4 w-4 mr-2" />
-                        View Details
-                      </Button>
-                      
-                      {project.approval_status === 'Pending' && (
-                        <>
-                          <Button
-                            size="sm"
-                            onClick={() => handleConvertToProject(project.id)}
-                            className="bg-green-600 hover:bg-green-700 text-white"
-                          >
-                            <CheckCircle className="h-4 w-4 mr-2" />
-                            Convert to Project
-                          </Button>
-                          
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              const reason = prompt('Please provide a reason for rejection:');
-                              if (reason) {
-                                handleRejectOpportunity(project.id, reason);
-                              }
-                            }}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <AlertTriangle className="h-4 w-4 mr-2" />
-                            Reject
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                          <div className="flex items-center space-x-2 ml-4">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleViewDetails(project.id)}
+                            >
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Details
+                            </Button>
+                            
+                            {project.approval_status === 'Pending' && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleConvertToProject(project.id)}
+                                  className="bg-green-600 hover:bg-green-700 text-white"
+                                >
+                                  <CheckCircle className="h-4 w-4 mr-2" />
+                                  Convert to Project
+                                </Button>
+                                
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    const reason = prompt('Please provide a reason for rejection:');
+                                    if (reason) {
+                                      handleRejectOpportunity(project.id, reason);
+                                    }
+                                  }}
+                                  className="text-red-600 hover:text-red-700"
+                                >
+                                  <AlertTriangle className="h-4 w-4 mr-2" />
+                                  Reject
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Sales Opportunities Section */}
+            {salesOpportunities.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold mb-4 text-orange-600">Sales Pipeline ({salesOpportunities.length})</h3>
+                <div className="grid gap-3">
+                  {salesOpportunities.map((opportunity) => (
+                    <Card key={opportunity.id} className="hover:shadow-sm transition-shadow border-l-4 border-l-orange-400">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-3 mb-2">
+                              <h4 className="font-medium">{opportunity.opportunity_title || 'Untitled Opportunity'}</h4>
+                              <Badge className={
+                                opportunity.current_stage_id === 'L6' ? 'bg-green-100 text-green-800' :
+                                opportunity.current_stage_id === 'L5' ? 'bg-blue-100 text-blue-800' :
+                                opportunity.current_stage_id === 'L4' ? 'bg-purple-100 text-purple-800' :
+                                opportunity.current_stage_id === 'L3' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-gray-100 text-gray-800'
+                              }>
+                                {opportunity.current_stage_name}
+                              </Badge>
+                              <Badge variant="outline" className={
+                                opportunity.priority === 'High' ? 'border-red-300 text-red-700' :
+                                opportunity.priority === 'Medium' ? 'border-yellow-300 text-yellow-700' :
+                                'border-gray-300 text-gray-700'
+                              }>
+                                {opportunity.priority}
+                              </Badge>
+                              {opportunity.quotation_status && (
+                                <Badge variant="secondary" className="text-xs">
+                                  Quote: {opportunity.quotation_status}
+                                </Badge>
+                              )}
+                            </div>
+                            
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm text-gray-600">
+                              <div>
+                                <span className="font-medium">Client:</span>
+                                <span className="ml-1">{opportunity.client_name || 'N/A'}</span>
+                              </div>
+                              <div>
+                                <span className="font-medium">Sales Owner:</span>
+                                <span className="ml-1">{opportunity.sales_owner_name || 'Unassigned'}</span>
+                              </div>
+                              <div>
+                                <span className="font-medium">Value:</span>
+                                <span className="ml-1">${opportunity.quotation_total?.toLocaleString() || opportunity.opportunity_value?.toLocaleString() || '0'}</span>
+                              </div>
+                              <div>
+                                <span className="font-medium">Expected Close:</span>
+                                <span className="ml-1">{opportunity.expected_close_date || 'TBD'}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center space-x-2 ml-4">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => navigate(`/opportunities/${opportunity.opportunity_id}/edit`)}
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              View Opportunity
+                            </Button>
+                            
+                            {opportunity.current_stage_id === 'L6' && (
+                              <Button
+                                size="sm"
+                                onClick={() => triggerSDRCreation(opportunity.opportunity_id)}
+                                className="bg-blue-600 hover:bg-blue-700 text-white"
+                              >
+                                <Plus className="h-4 w-4 mr-1" />
+                                Create SDR
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
