@@ -3672,6 +3672,18 @@ const EnhancedOpportunityManagement = () => {
                               <Eye className="h-4 w-4 mr-1" />
                               View Details
                             </Button>
+                            {quotation.status === 'submitted' && canApproveQuotations() && (
+                              <Button
+                                type="button"
+                                variant="default"
+                                size="sm"
+                                onClick={(event) => approveQuotation(quotation.id, event)}
+                                className="bg-green-600 hover:bg-green-700 text-white"
+                              >
+                                <CheckCircle className="h-4 w-4 mr-1" />
+                                Approve
+                              </Button>
+                            )}
                             {quotation.status === 'approved' && (
                               <Button
                                 type="button"
