@@ -3228,7 +3228,12 @@ async def initialize_database():
             {"name": "Admin", "description": "Administrator with full system access"},
             {"name": "Manager", "description": "Manager with departmental access"},
             {"name": "Employee", "description": "Employee with basic access"},
-            {"name": "User", "description": "Basic user access"}
+            {"name": "User", "description": "Basic user access"},
+            {"name": "Sales Executive", "description": "Sales team member with opportunity access"},
+            {"name": "Sales Manager", "description": "Sales team leader with approval rights"},
+            {"name": "Commercial Approver", "description": "Commercial approval authority"},
+            {"name": "Delivery Manager", "description": "Service delivery team leader"},
+            {"name": "Delivery Team", "description": "Service delivery team member"}
         ]
         
         admin_role_id = None
