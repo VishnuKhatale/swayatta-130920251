@@ -11763,7 +11763,7 @@ async def get_quotations(current_user: User = Depends(get_current_user)):
 @api_router.get("/quotations/{quotation_id}", response_model=APIResponse)
 @require_permission("/opportunities", "view")
 async def get_quotation(quotation_id: str, current_user: User = Depends(get_current_user)):
-    """Get a specific quotation with all related data"""
+    """Get a specific quotation by ID with complete hierarchy"""
     try:
         # Get quotation
         quotation = await db.quotations.find_one({"id": quotation_id, "is_deleted": False})
@@ -11771,36 +11771,35 @@ async def get_quotation(quotation_id: str, current_user: User = Depends(get_curr
             raise HTTPException(status_code=404, detail="Quotation not found")
         
         # Get phases
-        phases = await db.quotation_phases.find({"quotation_id": quotation_id, "is_deleted": False}).sort("phase_order", 1).to_list(100)
+        phases = await db.quotation_phases.find({"quotation_id": quotation_id, "is_deleted": False}).to_list(100)
         
-        # Get groups for each phase
         for phase in phases:
-            groups = await db.quotation_groups.find({"phase_id": phase["id"], "is_deleted": False}).sort("group_order", 1).to_list(100)
+            # Get groups for each phase
+            groups = await db.quotation_groups.find({"phase_id": phase["id"], "is_deleted": False}).to_list(100)
             
-            # Get items for each group
             for group in groups:
-                items = await db.quotation_items.find({"group_id": group["id"], "is_deleted": False}).sort("item_order", 1).to_list(1000)
-                
-                # Get yearly allocations for each item
+                # Get items for each group
+                items = await db.quotation_items.find({"group_id": group["id"], "is_deleted": False}).to_list(100)
+                # Remove MongoDB _id from items
                 for item in items:
-                    yearly_data = await db.quotation_item_yearly.find({"item_id": item["id"]}).sort("year_no", 1).to_list(10)
-                    item["yearly_allocations"] = yearly_data
-                    
-                    # Clean MongoDB _id fields
-                    for yearly in yearly_data:
-                        yearly.pop("_id", None)
                     item.pop("_id", None)
-                
                 group["items"] = items
-                group.pop("_id", None)
             
+            # Remove MongoDB _id from groups
+            for group in groups:
+                group.pop("_id", None)
             phase["groups"] = groups
+        
+        # Remove MongoDB _id from phases
+        for phase in phases:
             phase.pop("_id", None)
         
+        # Add phases to quotation
         quotation["phases"] = phases
         quotation.pop("_id", None)
         
         return APIResponse(success=True, message="Quotation retrieved successfully", data=quotation)
+        
     except HTTPException:
         raise
     except Exception as e:
