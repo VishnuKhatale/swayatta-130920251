@@ -1039,6 +1039,41 @@ const EnhancedOpportunityManagement = () => {
     }
   };
 
+  // Approve quotation (Admin functionality)
+  const approveQuotation = async (quotationId, event) => {
+    event.stopPropagation(); // Prevent triggering the quotation click
+    
+    if (!window.confirm('Are you sure you want to approve this quotation? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const response = await axios.post(`${API_BASE_URL}/api/quotations/${quotationId}/approve`, {}, {
+        headers: getAuthHeaders()
+      });
+      
+      if (response.data.success) {
+        toast.success('Quotation approved successfully');
+        // Refresh quotations list
+        if (selectedOpportunity) {
+          fetchQuotations(selectedOpportunity.id);
+        }
+      }
+    } catch (error) {
+      console.error('Error approving quotation:', error);
+      const errorMessage = error.response?.data?.detail || 'Failed to approve quotation';
+      toast.error(errorMessage);
+    }
+  };
+
+  // Check if current user can approve quotations
+  const canApproveQuotations = () => {
+    // Check if user has admin or approval permissions
+    // This should be based on your actual role/permission system
+    const userRole = currentUser?.role?.name || currentUser?.role;
+    return ['Admin', 'Commercial Approver', 'Sales Manager'].includes(userRole);
+  };
+
   // Fetch product catalog
   const fetchProductCatalog = async () => {
     try {
