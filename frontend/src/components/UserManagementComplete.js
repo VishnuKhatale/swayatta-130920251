@@ -522,6 +522,7 @@ const UserManagementComplete = () => {
       address: '',
       business_verticals: []
     });
+    setSelectedUser(null); // Reset selectedUser to ensure create mode works
     setProfilePhotoPreview('');
     setSelectedFile(null);
     setSubDepartments([]);
