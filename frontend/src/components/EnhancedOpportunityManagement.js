@@ -1826,20 +1826,23 @@ const EnhancedOpportunityManagement = () => {
                                 Created: {new Date(quotation.created_at).toLocaleDateString()}
                               </p>
                             </div>
-                            <div className="text-right">
-                              <p className="font-semibold text-gray-900">
-                                {quotation.currency_id === '1' ? '$' : '₹'}{quotation.grand_total?.toLocaleString() || '0.00'}
-                              </p>
-                              <p className="text-sm text-gray-500">
-                                Valid until: {quotation.validity_date ? new Date(quotation.validity_date).toLocaleDateString() : 'N/A'}
-                              </p>
-                              {quotation.status === 'submitted' && canApproveQuotations() && (
+                            <div className="text-right flex items-center space-x-2">
+                              <div>
+                                <p className="font-semibold text-gray-900">
+                                  {quotation.currency_id === '1' ? '$' : '₹'}{quotation.grand_total?.toLocaleString() || '0.00'}
+                                </p>
+                                <p className="text-sm text-gray-500">
+                                  Valid until: {quotation.validity_date ? new Date(quotation.validity_date).toLocaleDateString() : 'N/A'}
+                                </p>
+                              </div>
+
+                              {/* Approval button for Admin, Commercial Approver, Sales Manager */}
+                              {(quotation.status === 'submitted' || quotation.status === 'Unapproved') && canApproveQuotations() && (
                                 <Button
-                                  type="button"
                                   variant="default"
                                   size="sm"
                                   onClick={(event) => approveQuotation(quotation.id, event)}
-                                  className="bg-green-600 hover:bg-green-700 text-white mt-2"
+                                  className="bg-green-600 hover:bg-green-700 text-white ml-2"
                                 >
                                   <CheckCircle className="h-4 w-4 mr-1" />
                                   Approve
