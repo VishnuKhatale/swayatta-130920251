@@ -201,7 +201,11 @@ const ServiceDelivery = () => {
       }
     } catch (error) {
       console.error('Error loading analytics:', error);
-      toast.error('Failed to load analytics');
+      toast({
+        title: "Error",
+        description: "Failed to load analytics",
+        variant: "destructive"
+      });
     } finally {
       setLoading(prev => ({ ...prev, analytics: false }));
     }
