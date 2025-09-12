@@ -205,12 +205,29 @@ const EnhancedOpportunityManagement = () => {
     };
   };
 
+  // Fetch current user information
+  const fetchCurrentUser = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/auth/me`, {
+        headers: getAuthHeaders()
+      });
+      
+      if (response.data.success) {
+        setCurrentUser(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching current user:', error);
+      // Don't show error toast as this is not critical for the component to function
+    }
+  };
+
   // Load data on component mount
   useEffect(() => {
     fetchOpportunities();
     fetchMasterData();
     fetchForecastData();
     fetchCompetitorAnalysis();
+    fetchCurrentUser();
   }, []);
 
   // Fetch opportunities with enhanced data
