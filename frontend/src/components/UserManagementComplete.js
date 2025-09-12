@@ -738,6 +738,7 @@ const UserManagementComplete = () => {
           id={id}
           value={value || ''}
           onChange={(e) => onChange(id.replace(/-/g, '_'), e.target.value)}
+          onInput={(e) => onChange(id.replace(/-/g, '_'), e.target.value)}
           placeholder={placeholder}
           rows={3}
           className={error ? 'border-red-500' : ''}
@@ -749,6 +750,7 @@ const UserManagementComplete = () => {
           type={type}
           value={value || ''}
           onChange={(e) => onChange(id.replace(/-/g, '_'), e.target.value)}
+          onInput={(e) => onChange(id.replace(/-/g, '_'), e.target.value)}
           placeholder={placeholder}
           max={type === 'date' ? new Date().toISOString().split('T')[0] : undefined}
           className={error ? 'border-red-500' : ''}
