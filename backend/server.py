@@ -10258,49 +10258,107 @@ async def auto_initiate_service_delivery(opportunity_id: str, user_id: str):
 @api_router.get("/service-delivery/upcoming", response_model=APIResponse)
 @require_permission("/service-delivery", "view")
 async def get_upcoming_projects(current_user: User = Depends(get_current_user)):
-    """Get all upcoming projects for review"""
+    """Get all opportunities in sales process and upcoming service delivery requests"""
     try:
-        # Get upcoming service delivery requests
-        sdrs = await db.service_delivery_requests.find({
-            "project_status": "Upcoming",
-            "is_deleted": False
+        # Get all active opportunities in sales process (L1-L8)
+        opportunities = await db.opportunities.find({
+            "is_deleted": False,
+            "current_stage_id": {"$in": ["L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8"]}
         }).sort("created_at", -1).to_list(1000)
         
-        enriched_sdrs = []
-        for sdr in sdrs:
-            # Enrich with opportunity data
-            opportunity = await db.opportunities.find_one({"id": sdr["opportunity_id"], "is_deleted": False})
+        enriched_items = []
+        
+        for opportunity in opportunities:
+            # Check if there's an existing SDR for this opportunity
+            existing_sdr = await db.service_delivery_requests.find_one({
+                "opportunity_id": opportunity["id"],
+                "is_deleted": False
+            })
             
-            # Enrich with sales owner data
+            # Get sales owner data
             sales_owner = None
-            if sdr.get("sales_owner_id"):
-                sales_owner = await db.users.find_one({"id": sdr["sales_owner_id"], "is_deleted": False})
+            if opportunity.get("opportunity_owner_id"):
+                sales_owner = await db.users.find_one({"id": opportunity["opportunity_owner_id"], "is_deleted": False})
             
-            # Get approved quotation
+            # Get latest quotation (approved if available, otherwise latest)
             approved_quotation = await db.quotations.find_one({
-                "opportunity_id": sdr["opportunity_id"],
+                "opportunity_id": opportunity["id"],
                 "status": "Approved",
                 "is_deleted": False
             })
             
-            enriched_sdr = {
-                **sdr,
-                "opportunity_title": opportunity.get("opportunity_title", "") if opportunity else "",
-                "opportunity_value": opportunity.get("estimated_value", 0) if opportunity else 0,
-                "client_name": opportunity.get("company_name", "") if opportunity else sdr.get("client_name", ""),
-                "sales_owner_name": f"{sales_owner['name']}" if sales_owner else "Unassigned",
+            if not approved_quotation:
+                # Get latest quotation regardless of status
+                latest_quotation = await db.quotations.find_one({
+                    "opportunity_id": opportunity["id"],
+                    "is_deleted": False
+                }, sort=[("created_at", -1)])
+                approved_quotation = latest_quotation
+            
+            # Determine item type and status
+            if existing_sdr:
+                item_type = "service_delivery_request"
+                item_status = existing_sdr.get("project_status", "Upcoming")
+                approval_status = existing_sdr.get("approval_status", "Pending")
+                sdr_id = existing_sdr["id"]
+                sd_request_id = existing_sdr.get("sd_request_id", "")
+            else:
+                item_type = "sales_opportunity"
+                item_status = "In Sales Process"
+                approval_status = "N/A"
+                sdr_id = None
+                sd_request_id = ""
+            
+            # Determine stage status
+            stage_id = opportunity.get("current_stage_id", "L1")
+            stage_name = opportunity.get("current_stage_name", stage_id)
+            
+            # Calculate estimated delivery date based on stage
+            estimated_delivery_date = None
+            if stage_id in ["L6", "L7", "L8"]:
+                # For won/lost/dropped opportunities, estimate based on close date
+                close_date = opportunity.get("expected_close_date")
+                if close_date:
+                    from datetime import datetime, timedelta
+                    try:
+                        close_dt = datetime.fromisoformat(close_date.replace('Z', '+00:00'))
+                        estimated_delivery_date = (close_dt + timedelta(days=30)).strftime('%Y-%m-%d')
+                    except:
+                        pass
+            
+            enriched_item = {
+                "id": sdr_id or opportunity["id"],
+                "sd_request_id": sd_request_id,
+                "opportunity_id": opportunity["id"],
+                "opportunity_title": opportunity.get("opportunity_title", ""),
+                "opportunity_value": opportunity.get("estimated_value", 0),
+                "client_name": opportunity.get("company_name", ""),
+                "sales_owner_name": sales_owner.get("name", "Unassigned") if sales_owner else "Unassigned",
+                "sales_owner_id": opportunity.get("opportunity_owner_id"),
                 "quotation_id": approved_quotation.get("quotation_number", "") if approved_quotation else "",
-                "quotation_total": approved_quotation.get("grand_total", 0) if approved_quotation else 0
+                "quotation_total": approved_quotation.get("grand_total", 0) if approved_quotation else 0,
+                "quotation_status": approved_quotation.get("status", "") if approved_quotation else "",
+                "current_stage_id": stage_id,
+                "current_stage_name": stage_name,
+                "item_type": item_type,
+                "project_status": item_status,
+                "approval_status": approval_status,
+                "estimated_delivery_date": estimated_delivery_date,
+                "expected_close_date": opportunity.get("expected_close_date"),
+                "created_at": existing_sdr.get("created_at") if existing_sdr else opportunity.get("created_at"),
+                "priority": "High" if stage_id in ["L5", "L6"] else "Medium" if stage_id in ["L3", "L4"] else "Low"
             }
             
-            # Remove MongoDB _id
-            enriched_sdr.pop("_id", None)
-            enriched_sdrs.append(enriched_sdr)
+            enriched_items.append(enriched_item)
+        
+        # Sort by priority and stage progression
+        stage_order = {"L6": 1, "L5": 2, "L4": 3, "L3": 4, "L2": 5, "L1": 6, "L7": 7, "L8": 8}
+        enriched_items.sort(key=lambda x: (stage_order.get(x["current_stage_id"], 99), x["created_at"]))
         
         return APIResponse(
             success=True,
-            message="Upcoming projects retrieved successfully",
-            data=enriched_sdrs
+            message="Sales pipeline and upcoming projects retrieved successfully",
+            data=enriched_items
         )
         
     except HTTPException:
