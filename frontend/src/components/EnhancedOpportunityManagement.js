@@ -1092,6 +1092,43 @@ const EnhancedOpportunityManagement = () => {
     return allowedRoles.includes(userRole);
   };
 
+  // Handle quotation status change via dropdown
+  const handleQuotationStatusChange = async (quotationId, newStatus) => {
+    try {
+      let endpoint = '';
+      let method = 'POST';
+      let data = {};
+
+      if (newStatus === 'Approved') {
+        endpoint = `/api/quotations/${quotationId}/approve`;
+      } else {
+        // For Draft or Unapproved, update directly
+        endpoint = `/api/quotations/${quotationId}`;
+        method = 'PUT';
+        data = { status: newStatus };
+      }
+
+      const response = await axios({
+        method: method,
+        url: `${API_BASE_URL}${endpoint}`,
+        data: data,
+        headers: getAuthHeaders()
+      });
+
+      if (response.data.success) {
+        toast.success(`Quotation status updated to ${newStatus}`);
+        // Refresh quotations list
+        if (selectedOpportunity) {
+          fetchQuotations(selectedOpportunity.id);
+        }
+      }
+    } catch (error) {
+      console.error('Error updating quotation status:', error);
+      const errorMessage = error.response?.data?.detail || 'Failed to update quotation status';
+      toast.error(errorMessage);
+    }
+  };
+
   // Fetch product catalog
   const fetchProductCatalog = async () => {
     try {
