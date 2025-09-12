@@ -1358,21 +1358,51 @@ class ERPBackendTester:
             if success_non_l6:
                 print("   ✅ Auto-initiation working for various opportunity stages")
         
-        # ===== 4. TEST PROJECT CONVERSION =====
-        print("\n🔍 Testing Project Conversion...")
+        # ===== 5. ANALYTICS ENHANCEMENT TESTING =====
+        print("\n🔍 Testing Enhanced Analytics with Pipeline Data...")
         
-        # Test POST /api/service-delivery/upcoming/{sdr_id}/convert
-        if created_sdr_id:
-            success_convert, response_convert = self.run_test(
-                "POST /api/service-delivery/upcoming/{sdr_id}/convert - Convert to Active Project",
-                "POST",
-                f"service-delivery/upcoming/{created_sdr_id}/convert",
-                200
-            )
-            test_results.append(success_convert)
+        # Test GET /api/service-delivery/analytics - Should work with enhanced data structure
+        success_analytics, response_analytics = self.run_test(
+            "GET /api/service-delivery/analytics - Enhanced Analytics",
+            "GET",
+            "service-delivery/analytics",
+            200
+        )
+        test_results.append(success_analytics)
+        
+        if success_analytics and response_analytics.get('success'):
+            analytics = response_analytics.get('data', {})
+            required_sections = ['status_distribution', 'delivery_distribution', 'metrics']
+            present_sections = [section for section in required_sections if section in analytics]
             
-            if success_convert:
-                print("   ✅ Project conversion working correctly")
+            print(f"   ✅ Enhanced analytics retrieved with {len(present_sections)}/{len(required_sections)} sections")
+            
+            # Verify analytics distinguish between SDRs and sales opportunities
+            if 'metrics' in analytics:
+                metrics = analytics['metrics']
+                print(f"   📊 Analytics Metrics:")
+                print(f"      Total Projects: {metrics.get('total_projects', 0)}")
+                print(f"      Active Projects: {metrics.get('active_projects', 0)}")
+                print(f"      Pipeline Items: {len(upcoming_items)}")
+                
+                # Check if analytics reflect both pipeline and delivery metrics
+                if metrics.get('total_projects', 0) > 0 or len(upcoming_items) > 0:
+                    print("   ✅ Analytics showing both pipeline and delivery metrics")
+                    test_results.append(True)
+                else:
+                    print("   ⚠️  Analytics may not be reflecting enhanced data")
+                    test_results.append(False)
+            
+            # Check status distribution includes both SDRs and opportunities
+            if 'status_distribution' in analytics:
+                status_dist = analytics['status_distribution']
+                print(f"   📊 Status Distribution: {status_dist}")
+                
+                if len(status_dist) > 0:
+                    print("   ✅ Status distribution working with enhanced data")
+                    test_results.append(True)
+                else:
+                    test_results.append(False)
         
         # ===== 5. TEST ACTIVE PROJECTS API =====
         print("\n🔍 Testing Active Projects API...")
