@@ -10815,6 +10815,140 @@ async def trigger_auto_initiation(opportunity_id: str, current_user: User = Depe
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# Admin endpoint to seed approved quotations for all opportunities
+@api_router.post("/admin/seed-approved-quotations", response_model=APIResponse)
+async def seed_approved_quotations_for_all_opportunities(current_user: User = Depends(get_current_user)):
+    """Admin endpoint to create approved quotations for all opportunities automatically"""
+    try:
+        # Get all opportunities
+        opportunities = await db.opportunities.find({
+            "is_deleted": False
+        }).to_list(1000)
+        
+        created_count = 0
+        updated_count = 0
+        
+        for opportunity in opportunities:
+            # Check if opportunity already has an approved quotation
+            existing_approved = await db.quotations.find_one({
+                "opportunity_id": opportunity["id"],
+                "status": "Approved",
+                "is_deleted": False
+            })
+            
+            if existing_approved:
+                continue  # Skip if already has approved quotation
+            
+            # Check if opportunity has any quotation that can be updated to approved
+            existing_quotation = await db.quotations.find_one({
+                "opportunity_id": opportunity["id"],
+                "is_deleted": False
+            })
+            
+            if existing_quotation:
+                # Update existing quotation to Approved
+                await db.quotations.update_one(
+                    {"id": existing_quotation["id"]},
+                    {"$set": {
+                        "status": "Approved",
+                        "approved_by": current_user.id,
+                        "approved_at": datetime.now(timezone.utc),
+                        "updated_at": datetime.now(timezone.utc)
+                    }}
+                )
+                updated_count += 1
+            else:
+                # Create new approved quotation
+                quotation_number = f"QUO-{datetime.now().strftime('%Y%m%d')}-{opportunity['id'][:8].upper()}"
+                
+                # Calculate totals based on opportunity value
+                opportunity_value = opportunity.get("expected_revenue", 100000)  # Default 100k if no value
+                otp_amount = opportunity_value * 0.3  # 30% OTP
+                recurring_monthly = opportunity_value * 0.05  # 5% monthly recurring
+                recurring_total = recurring_monthly * 12  # 1 year of recurring
+                grand_total = otp_amount + recurring_total
+                
+                new_quotation = Quotation(
+                    quotation_number=quotation_number,
+                    opportunity_id=opportunity["id"],
+                    customer_id=opportunity["id"],  # Using opportunity ID as customer ID
+                    customer_name=opportunity.get("company_name", "Unknown Client"),
+                    customer_contact_email=f"contact@{opportunity.get('company_name', 'unknown').lower().replace(' ', '')}.com",
+                    pricing_list_id="standard-pricing-001",
+                    currency_id="1",
+                    validity_date=(datetime.now(timezone.utc) + timedelta(days=30)).strftime('%Y-%m-%d'),
+                    quotation_date=datetime.now(timezone.utc).strftime('%Y-%m-%d'),
+                    status="Approved",  # Set to Approved directly
+                    total_otp=otp_amount,
+                    total_year1=recurring_monthly,
+                    grand_total=grand_total,
+                    terms_and_conditions="Standard terms and conditions apply.",
+                    created_by=current_user.id,
+                    approved_by=current_user.id,
+                    approved_at=datetime.now(timezone.utc)
+                )
+                
+                await db.quotations.insert_one(new_quotation.dict())
+                
+                # Create a basic phase structure for the quotation
+                phase = QuotationPhase(
+                    quotation_id=new_quotation.id,
+                    phase_name="Implementation Phase",
+                    phase_description="Standard implementation and deployment",
+                    start_date=(datetime.now(timezone.utc) + timedelta(days=7)).strftime('%Y-%m-%d'),
+                    tenure_months=12,
+                    currency_id="1",
+                    phase_total_otp=otp_amount,
+                    phase_total_year1=recurring_monthly,
+                    phase_grand_total=grand_total,
+                    created_by=current_user.id
+                )
+                
+                await db.quotation_phases.insert_one(phase.dict())
+                
+                # Create a basic group within the phase
+                group = QuotationGroup(
+                    phase_id=phase.id,
+                    group_name="Core Services",
+                    group_description="Primary service delivery components",
+                    created_by=current_user.id
+                )
+                
+                await db.quotation_groups.insert_one(group.dict())
+                
+                # Create basic items within the group
+                item = QuotationItem(
+                    group_id=group.id,
+                    core_product_id="default-product-001",
+                    item_name="Standard Service Package",
+                    item_description=f"Service package for {opportunity.get('opportunity_title', 'Opportunity')}",
+                    quantity=1,
+                    unit_price_otp=otp_amount,
+                    unit_price_year1=recurring_monthly,
+                    total_otp=otp_amount,
+                    total_year1=recurring_monthly,
+                    created_by=current_user.id
+                )
+                
+                await db.quotation_items.insert_one(item.dict())
+                
+                created_count += 1
+        
+        return APIResponse(
+            success=True,
+            message=f"Quotation seeding completed: {created_count} created, {updated_count} updated to Approved status",
+            data={
+                "created_quotations": created_count,
+                "updated_quotations": updated_count,
+                "total_processed": created_count + updated_count
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to seed approved quotations: {str(e)}")
+
 # ===== END SERVICE DELIVERY MODULE APIs =====
 
 # ===== COMPANY MANAGEMENT MODULE - ENHANCED MASTER DATA APIs =====
