@@ -10375,6 +10375,10 @@ async def get_project_review_details(sdr_id: str, current_user: User = Depends(g
         if lead_data:
             lead_data.pop("_id", None)
         
+        # Clean up sales history
+        for history_item in sales_history:
+            history_item.pop("_id", None)
+        
         review_data = {
             "sdr": sdr,
             "opportunity": opportunity,
