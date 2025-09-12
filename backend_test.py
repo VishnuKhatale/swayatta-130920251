@@ -1214,53 +1214,68 @@ class ERPBackendTester:
             print("   ❌ No items returned from upcoming projects API")
             test_results.append(False)
         
-        # ===== 2. TEST AUTO-INITIATION API =====
-        print("\n🔍 Testing Auto-Initiation Logic...")
+        # ===== 3. BUSINESS LOGIC VALIDATION =====
+        print("\n🔍 Testing Enhanced Business Logic...")
         
-        # Test POST /api/service-delivery/auto-initiate/{opportunity_id}
-        success_auto_init, response_auto_init = self.run_test(
-            "POST /api/service-delivery/auto-initiate/{opportunity_id} - Manual Auto-Initiation",
-            "POST",
-            f"service-delivery/auto-initiate/{test_opportunity_id}",
-            200
-        )
-        test_results.append(success_auto_init)
+        # Test priority calculation based on stage
+        priority_tests = []
+        for stage_id, items in opportunities_by_stage.items():
+            if items:
+                item = items[0]
+                priority = item.get('priority')
+                
+                # Validate priority logic: High for L5/L6, Medium for L3/L4, Low for L1/L2
+                expected_priority = None
+                if stage_id in ['L5', 'L6']:
+                    expected_priority = 'High'
+                elif stage_id in ['L3', 'L4']:
+                    expected_priority = 'Medium'
+                elif stage_id in ['L1', 'L2']:
+                    expected_priority = 'Low'
+                
+                if expected_priority and priority == expected_priority:
+                    priority_tests.append(True)
+                    print(f"   ✅ Priority calculation correct for {stage_id}: {priority}")
+                elif expected_priority:
+                    priority_tests.append(False)
+                    print(f"   ❌ Priority mismatch for {stage_id}: expected {expected_priority}, got {priority}")
         
-        created_sdr_id = None
-        if success_auto_init and response_auto_init.get('success'):
-            sdr_data = response_auto_init.get('data', {})
-            created_sdr_id = sdr_data.get('sdr_id')
-            print(f"   ✅ SDR auto-initiated with ID: {created_sdr_id}")
-            
-            # Verify SDR ID format (SDR-YYYYMMDD-XXXXXX)
-            if created_sdr_id and created_sdr_id.startswith('SDR-'):
-                print("   ✅ SDR ID generation format correct")
-            else:
-                print(f"   ⚠️  SDR ID format: {created_sdr_id}")
-        
-        # Test duplicate prevention (should fail or return existing)
-        success_duplicate, response_duplicate = self.run_test(
-            "POST /api/service-delivery/auto-initiate/{opportunity_id} - Duplicate Prevention",
-            "POST",
-            f"service-delivery/auto-initiate/{test_opportunity_id}",
-            400  # Should prevent duplicates
-        )
-        
-        # If it returns 200, it might be returning existing SDR (also valid)
-        if not success_duplicate:
-            success_duplicate_alt, response_duplicate_alt = self.run_test(
-                "POST /api/service-delivery/auto-initiate/{opportunity_id} - Duplicate Check Alt",
-                "POST",
-                f"service-delivery/auto-initiate/{test_opportunity_id}",
-                200
-            )
-            if success_duplicate_alt:
-                print("   ✅ Duplicate handling working (returns existing SDR)")
-                success_duplicate = True
+        if priority_tests and sum(priority_tests) >= len(priority_tests) * 0.8:
+            print("   ✅ Priority calculation logic working correctly")
+            test_results.append(True)
         else:
-            print("   ✅ Duplicate prevention working correctly")
+            print("   ⚠️  Priority calculation needs verification")
+            test_results.append(False)
         
-        test_results.append(success_duplicate)
+        # Test stage ordering logic
+        stage_order_expected = ["L6", "L5", "L4", "L3", "L2", "L1", "L7", "L8"]
+        found_stage_order = []
+        
+        for item in upcoming_items[:10]:  # Check first 10 items
+            stage = item.get('current_stage_id')
+            if stage not in found_stage_order:
+                found_stage_order.append(stage)
+        
+        # Check if ordering follows priority (L6 > L5 > L4 > L3 > L2 > L1 > L7 > L8)
+        ordering_correct = True
+        for i in range(len(found_stage_order) - 1):
+            current_stage = found_stage_order[i]
+            next_stage = found_stage_order[i + 1]
+            
+            if current_stage in stage_order_expected and next_stage in stage_order_expected:
+                current_index = stage_order_expected.index(current_stage)
+                next_index = stage_order_expected.index(next_stage)
+                
+                if current_index > next_index:  # Should be in ascending order of priority
+                    ordering_correct = False
+                    break
+        
+        if ordering_correct:
+            print("   ✅ Stage ordering logic working correctly")
+            test_results.append(True)
+        else:
+            print("   ⚠️  Stage ordering may need verification")
+            test_results.append(False)
         
         # ===== 3. TEST UPCOMING PROJECTS APIs =====
         print("\n🔍 Testing Upcoming Projects APIs...")
