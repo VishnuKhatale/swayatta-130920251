@@ -1027,6 +1027,13 @@ function App() {
               </ProtectedRoute>
             } />
             
+            {/* Quotations Routes */}
+            <Route path="/quotations" element={
+              <ProtectedRoute>
+                <QuotationListing />
+              </ProtectedRoute>
+            } />
+            
             {/* Service Delivery Routes */}
             <Route path="/service-delivery" element={
               <ProtectedRoute>
