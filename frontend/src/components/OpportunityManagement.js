@@ -384,6 +384,21 @@ const OpportunityManagement = () => {
     }
   };
 
+  // Load current user information
+  const loadCurrentUser = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/auth/me`, {
+        headers: getAuthHeaders()
+      });
+      if (response.data.success) {
+        setCurrentUser(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error loading current user:', error);
+      setCurrentUser(null);
+    }
+  };
+
   // Load user permissions for role-based visibility
   const loadUserPermissions = async () => {
     try {
@@ -397,6 +412,13 @@ const OpportunityManagement = () => {
       console.error('Error loading user permissions:', error);
       setUserPermissions({});
     }
+  };
+
+  // Check if current user can access role-gated fields
+  const canAccessRoleGatedField = () => {
+    const userRole = currentUser?.role?.name || currentUser?.role || currentUser?.role_name;
+    const allowedRoles = ['Admin', 'Commercial Approver', 'Sales Manager'];
+    return allowedRoles.includes(userRole);
   };
 
   // Check stage access (especially for L5 gating)
