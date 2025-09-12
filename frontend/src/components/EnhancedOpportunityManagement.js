@@ -93,6 +93,7 @@ const EnhancedOpportunityManagement = () => {
   const [showPipelineView, setShowPipelineView] = useState(true);
   const [selectedOpportunity, setSelectedOpportunity] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
+  const [currentUser, setCurrentUser] = useState(null);
   
   // Enhanced statistics
   const [statistics, setStatistics] = useState({
