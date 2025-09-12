@@ -1023,6 +1023,18 @@ function App() {
                 <EnhancedOpportunityManagement />
               </ProtectedRoute>
             } />
+            
+            {/* Service Delivery Routes */}
+            <Route path="/service-delivery" element={
+              <ProtectedRoute>
+                <ServiceDelivery />
+              </ProtectedRoute>
+            } />
+            <Route path="/service-delivery/upcoming/:sdrId/details" element={
+              <ProtectedRoute>
+                <ServiceDeliveryDetails />
+              </ProtectedRoute>
+            } />
             {/* Unified Opportunity Management Routes */}
             <Route path="/opportunities/new" element={
               <ProtectedRoute>
