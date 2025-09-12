@@ -89,7 +89,10 @@ const ServiceDeliveryDetails = () => {
       });
       
       if (response.data.success) {
-        toast.success('Project converted successfully! Delivery tracking has begun.');
+        toast({
+          title: "Success",
+          description: "Project converted successfully! Delivery tracking has begun."
+        });
         navigate('/service-delivery?tab=projects');
       }
     } catch (error) {
