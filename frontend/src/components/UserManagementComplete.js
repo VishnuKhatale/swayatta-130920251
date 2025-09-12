@@ -716,7 +716,11 @@ const UserManagementComplete = () => {
         <div>
           <Select 
             value={value || ''} 
-            onValueChange={(val) => onChange(id.replace(/-/g, '_'), val)}
+            onValueChange={(val) => {
+              // Extract field name from id by removing create-/edit- prefix
+              const fieldName = id.replace(/^(create|edit)-/, '').replace(/-/g, '_');
+              onChange(fieldName, val);
+            }}
             disabled={disabled}
           >
             <SelectTrigger className={error ? 'border-red-500' : ''}>
