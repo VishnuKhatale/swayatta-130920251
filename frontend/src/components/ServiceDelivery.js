@@ -219,7 +219,10 @@ const ServiceDelivery = () => {
       });
       
       if (response.data.success) {
-        toast.success('Project converted successfully!');
+        toast({
+          title: "Success",
+          description: "Project converted successfully!"
+        });
         loadUpcomingProjects(); // Refresh the list
       }
     } catch (error) {
