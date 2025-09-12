@@ -852,6 +852,110 @@ class PricingList(BaseModel):
 
 # ===== END PRODUCT & PRICING MASTER TABLES =====
 
+# ===== SERVICE DELIVERY (SD) MODULE MODELS =====
+
+class ServiceDeliveryRequest(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    sd_request_id: str = Field(default_factory=lambda: f"SDR-{datetime.now().strftime('%Y%m%d')}-{str(uuid.uuid4())[:6].upper()}")
+    opportunity_id: str  # FK to opportunities
+    project_status: str = "Upcoming"  # Upcoming, Project, Completed, Rejected
+    approval_status: str = "Pending"  # Pending, Approved, Rejected, Review
+    delivery_status: str = "Pending"  # Pending, In-Progress, Partial, Completed
+    delivery_progress: float = 0.0  # Percentage (0-100)
+    expected_delivery_date: Optional[str] = None  # YYYY-MM-DD format
+    actual_delivery_date: Optional[str] = None  # YYYY-MM-DD format
+    project_value: Optional[float] = None
+    client_name: Optional[str] = None
+    sales_owner_id: Optional[str] = None  # FK to users
+    delivery_owner_id: Optional[str] = None  # FK to users
+    remarks: Optional[str] = None
+    rejection_reason: Optional[str] = None
+    created_by: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    modified_by: Optional[str] = None
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    is_active: bool = True
+    is_deleted: bool = False
+
+class ServiceDeliveryApproval(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    approval_id: str = Field(default_factory=lambda: f"APP-{str(uuid.uuid4())[:8].upper()}")
+    sd_request_id: str  # FK to service_delivery_requests
+    approver_id: str  # FK to users
+    approver_role: str  # Manager, Delivery Head, Admin
+    approval_status: str = "Pending"  # Pending, Approved, Rejected, Review
+    remarks: Optional[str] = None
+    approved_at: Optional[datetime] = None
+    rejection_reason: Optional[str] = None
+    resubmission_count: int = 0
+    created_by: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    is_active: bool = True
+    is_deleted: bool = False
+
+class ServiceDeliveryLog(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    log_id: str = Field(default_factory=lambda: f"LOG-{str(uuid.uuid4())[:8].upper()}")
+    sd_request_id: Optional[str] = None  # FK to service_delivery_requests
+    opportunity_id: str  # FK to opportunities
+    action_type: str  # Creation, Review, Approval, Rejection, Resubmission, ERP_Sync, Progress_Update
+    action_status: str = "Success"  # Success, Failed, Warning
+    action_description: str
+    user_id: str  # FK to users
+    user_role: Optional[str] = None
+    old_value: Optional[str] = None
+    new_value: Optional[str] = None
+    error_message: Optional[str] = None
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    ip_address: Optional[str] = None
+    is_active: bool = True
+
+class ServiceDeliveryMilestone(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    sd_request_id: str  # FK to service_delivery_requests
+    milestone_name: str
+    milestone_description: Optional[str] = None
+    planned_date: Optional[str] = None  # YYYY-MM-DD format
+    actual_date: Optional[str] = None  # YYYY-MM-DD format
+    status: str = "Pending"  # Pending, In-Progress, Completed, Delayed
+    progress_percentage: float = 0.0
+    deliverables: Optional[str] = None  # JSON string of deliverables
+    milestone_order: int = 1
+    created_by: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    is_active: bool = True
+    is_deleted: bool = False
+
+class ServiceDeliveryDocument(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    sd_request_id: str  # FK to service_delivery_requests
+    document_name: str
+    document_type: str  # Contract, SOW, Technical_Spec, Delivery_Plan, Report, Other
+    file_path: str
+    file_size: Optional[int] = None
+    uploaded_by: str  # FK to users
+    uploaded_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    document_status: str = "Active"  # Active, Archived, Superseded
+    version: str = "1.0"
+    is_active: bool = True
+    is_deleted: bool = False
+
+class ServiceDeliveryERPSync(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    sd_request_id: str  # FK to service_delivery_requests
+    erp_project_id: Optional[str] = None
+    erp_sync_status: str = "Pending"  # Pending, Synced, Failed, Manual
+    last_sync_date: Optional[datetime] = None
+    sync_data: Optional[str] = None  # JSON string of ERP data
+    sync_error: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    is_active: bool = True
+
+# ===== END SERVICE DELIVERY MODULE MODELS =====
+
 # ===== END QMS MASTER TABLES =====
 
 # Utility functions
