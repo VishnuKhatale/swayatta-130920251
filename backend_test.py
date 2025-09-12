@@ -1114,10 +1114,11 @@ class ERPBackendTester:
         # Success criteria: At least 90% of tests should pass
         return (passed_tests / total_tests) >= 0.9
 
-    def test_service_delivery_module(self):
-        """Test Service Delivery (SD) Module Implementation - COMPREHENSIVE TESTING"""
+    def test_enhanced_service_delivery_pipeline_integration(self):
+        """Test Enhanced Service Delivery Backend - Sales Pipeline Integration"""
         print("\n" + "="*50)
-        print("TESTING SERVICE DELIVERY (SD) MODULE - COMPREHENSIVE")
+        print("TESTING ENHANCED SERVICE DELIVERY - SALES PIPELINE INTEGRATION")
+        print("ALL OPPORTUNITIES (L1-L8) + EXISTING SDRs")
         print("="*50)
         
         if not self.token:
