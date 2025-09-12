@@ -228,7 +228,11 @@ const ServiceDelivery = () => {
     } catch (error) {
       console.error('Error converting project:', error);
       const errorMessage = error.response?.data?.detail || 'Failed to convert project';
-      toast.error(errorMessage);
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive"
+      });
     }
   };
 
