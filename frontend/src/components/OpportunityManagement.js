@@ -259,6 +259,7 @@ const OpportunityManagement = () => {
   const [quotations, setQuotations] = useState([]);
   const [userPermissions, setUserPermissions] = useState({});
   const [stageAccess, setStageAccess] = useState({});
+  const [currentUser, setCurrentUser] = useState(null);
 
   // Load opportunity data
   useEffect(() => {
