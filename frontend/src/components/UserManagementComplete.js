@@ -747,8 +747,11 @@ const UserManagementComplete = () => {
         <Textarea
           id={id}
           value={value || ''}
-          onChange={(e) => onChange(id.replace(/-/g, '_'), e.target.value)}
-          onInput={(e) => onChange(id.replace(/-/g, '_'), e.target.value)}
+          onChange={(e) => {
+            // Extract field name from id by removing create-/edit- prefix
+            const fieldName = id.replace(/^(create|edit)-/, '').replace(/-/g, '_');
+            onChange(fieldName, e.target.value);
+          }}
           placeholder={placeholder}
           rows={3}
           className={error ? 'border-red-500' : ''}
@@ -759,8 +762,11 @@ const UserManagementComplete = () => {
           id={id}
           type={type}
           value={value || ''}
-          onChange={(e) => onChange(id.replace(/-/g, '_'), e.target.value)}
-          onInput={(e) => onChange(id.replace(/-/g, '_'), e.target.value)}
+          onChange={(e) => {
+            // Extract field name from id by removing create-/edit- prefix
+            const fieldName = id.replace(/^(create|edit)-/, '').replace(/-/g, '_');
+            onChange(fieldName, e.target.value);
+          }}
           placeholder={placeholder}
           max={type === 'date' ? new Date().toISOString().split('T')[0] : undefined}
           className={error ? 'border-red-500' : ''}
