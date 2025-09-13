@@ -798,15 +798,33 @@ frontend:
         agent: "testing"
         comment: "🎉 L4 APPROVAL REQUEST OBJECTID SERIALIZATION FIX VERIFIED WORKING - 100% success rate (4/4 tests passed). ✅ SERIALIZATION FIX CONFIRMED: POST /api/opportunities/{id}/request-approval now returns 200 status with properly serialized JSON response data. MongoDB ObjectId serialization error completely resolved. ✅ APPROVAL REQUEST FUNCTIONALITY: Approval requests are successfully created and stored in opportunity_approvals collection with proper data structure (approval_id, opportunity_id, stage_id, approval_type, comments, form_data, status, requested_by, requested_at). ✅ RESPONSE DATA STRUCTURE: API returns clean JSON response with all required fields properly serialized - approval_id, opportunity_id, approval_type, status, requested_at (ISO format), form_data (nested object), comments. No ObjectId or datetime serialization issues. ✅ COMPLEX DATA HANDLING: Nested form_data objects with multiple fields (quotation_value, quotation_currency, technical_compliance, commercial_terms) properly serialized. DateTime fields converted to ISO format strings for JSON compatibility. ✅ MULTIPLE REQUESTS SUPPORT: Multiple approval requests for same opportunity working correctly - each request gets unique approval_id, proper timestamps, and individual form_data storage. ✅ ERROR HANDLING: Invalid opportunity IDs return proper 404 errors, validation errors return appropriate 400 status codes. ✅ AUDIT TRAIL: All approval requests properly logged with user tracking, timestamps, and complete form data for audit purposes. ✅ PRODUCTION READINESS: L4 approval request functionality is fully operational and production-ready. The ObjectId serialization fix resolves the critical 500 error and enables proper approval workflow functionality as required for L4 stage operations."
 
+frontend:
+  - task: "🎯 L4 Quotation Approval Buttons Fix - Role-based Visibility"
+    implemented: false
+    working: "NA"
+    file: "/app/frontend/src/components/OpportunityManagement.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    implementation_details:
+      - "Fix missing XCircle import from lucide-react"
+      - "Implement missing rejectQuotation function for quotation rejection"
+      - "Ensure canAccessRoleGatedField() works properly for Admin, Commercial Approver, Sales Manager roles"
+      - "Verify Approve/Reject buttons visibility in L4 Enhanced Opportunity stage"
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Issue identified: Missing XCircle import, missing rejectQuotation function. The canAccessRoleGatedField() function appears correct but needs testing."
+
 metadata:
   created_by: "main_agent"
-  version: "1.0"
-  test_sequence: 0
-  run_ui: false
+  version: "1.1"
+  test_sequence: 1
+  run_ui: true
 
 test_plan:
   current_focus:
-    - "🎯 Create User Form Keyboard Input Fix - Bug Resolution Testing"
+    - "🎯 L4 Quotation Approval Buttons Fix - Role-based Visibility"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
