@@ -559,6 +559,8 @@ class Quotation(BaseModel):
     submitted_at: Optional[datetime] = None
     approved_by: Optional[str] = None
     approved_at: Optional[datetime] = None
+    rejected_by: Optional[str] = None
+    rejected_at: Optional[datetime] = None
     rejection_reason: Optional[str] = None
     # Additional audit fields for tracking actions
     deleted_by: Optional[str] = None
