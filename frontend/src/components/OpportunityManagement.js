@@ -461,6 +461,27 @@ const OpportunityManagement = () => {
     }
   };
 
+  // Reject quotation
+  const rejectQuotation = async (quotationId) => {
+    if (!window.confirm('Are you sure you want to reject this quotation? This action cannot be undone.')) {
+      return;
+    }
+    
+    try {
+      const response = await axios.post(`${API_BASE_URL}/api/quotations/${quotationId}/reject`, {}, {
+        headers: getAuthHeaders()
+      });
+      if (response.data.success) {
+        toast.success('Quotation rejected successfully');
+        loadQuotations(); // Refresh quotations list
+      }
+    } catch (error) {
+      console.error('Error rejecting quotation:', error);
+      const errorMessage = error.response?.data?.detail || 'Failed to reject quotation';
+      toast.error(errorMessage);
+    }
+  };
+
   // Delete quotation
   const deleteQuotation = async (quotationId) => {
     if (!window.confirm('Are you sure you want to delete this quotation?')) return;
