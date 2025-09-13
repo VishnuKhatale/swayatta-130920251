@@ -1049,6 +1049,11 @@ function App() {
                 <ServiceDeliveryDetails />
               </ProtectedRoute>
             } />
+            <Route path="/service-delivery/projects/:projectId" element={
+              <ProtectedRoute>
+                <ProjectProductManagement />
+              </ProtectedRoute>
+            } />
             
             {/* Test Input Route for debugging */}
             <Route path="/test-input" element={<TestInput />} />
