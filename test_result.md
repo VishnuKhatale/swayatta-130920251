@@ -423,7 +423,27 @@ backend:
         comment: "Issue #2 FIXED - File upload persistence implemented. Added complete file upload infrastructure with backend endpoints, immediate upload on file selection, document loading on opportunity open, and UI improvements showing uploaded file status with view links."
 
 backend:
-  - task: "🎯 L4 Quotation Rejection Backend API Testing"
+backend:
+  - task: "🎯 Issue 1: Lead to Opportunity Auto-Conversion After Approval - IMPLEMENTATION COMPLETED"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    implementation_details:
+      - "✅ Enhanced PUT /api/leads/{lead_id}/approve endpoint for immediate auto-conversion"
+      - "✅ Automatic opportunity creation when lead status changes to 'approved'"
+      - "✅ Proper data mapping from approved lead to new opportunity"
+      - "✅ Opportunity type determination based on lead subtype (Tender/Non-Tender)"
+      - "✅ Initial stage assignment and stage history creation"
+      - "✅ Lead notes update with opportunity reference"
+      - "✅ Comprehensive error handling and activity logging"
+      - "✅ Prevents duplicate opportunity creation for same lead"
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "IMPLEMENTATION COMPLETED: Modified lead approval endpoint to automatically create opportunities immediately upon lead approval. System now creates opportunity with proper data mapping, stage assignment, and audit trails. Error handling ensures lead approval succeeds even if opportunity creation fails. Ready for backend testing."
     implemented: true
     working: true
     file: "/app/backend/server.py"
