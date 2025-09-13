@@ -897,8 +897,7 @@ metadata:
   run_ui: true
 
 test_plan:
-  current_focus:
-    - "🎯 Issue 1: Lead to Opportunity Auto-Conversion After Approval"
+  current_focus: []
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
