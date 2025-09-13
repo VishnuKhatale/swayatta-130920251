@@ -422,7 +422,31 @@ backend:
         agent: "main"
         comment: "Issue #2 FIXED - File upload persistence implemented. Added complete file upload infrastructure with backend endpoints, immediate upload on file selection, document loading on opportunity open, and UI improvements showing uploaded file status with view links."
 
-  - task: "🎯 Enhanced Opportunity Management Module - L4 Approval Request ObjectId Serialization Fix"
+backend:
+  - task: "🎯 L4 Quotation Rejection Backend API Testing"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    endpoints_tested:
+      - "POST /api/quotations/{quotation_id}/reject - Reject quotation with role-based permissions (✅ Working)"
+      - "POST /api/quotations/{quotation_id}/approve - Existing approve endpoint verification (✅ Working)"
+      - "GET /api/quotations - Quotation listing for test data (✅ Working)"
+      - "POST /api/quotations - Quotation creation for test data (✅ Working)"
+      - "POST /api/quotations/{id}/submit - Submit quotation for status testing (✅ Working)"
+    business_logic_validated:
+      - "Role-based permissions working correctly (Admin, Commercial Approver, Sales Manager)"
+      - "Status validation enforced (only Unapproved quotations can be rejected)"
+      - "Audit trail implemented (rejected_by and rejected_at fields populated)"
+      - "Error handling for invalid quotation IDs (404) and wrong status (400)"
+      - "Permission denial for unauthorized roles (403)"
+      - "Existing approve workflow still functional"
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "🎉 QUOTATION REJECTION BACKEND API COMPREHENSIVE TESTING COMPLETED SUCCESSFULLY - 100% success rate. ✅ NEW REJECT ENDPOINT: POST /api/quotations/{quotation_id}/reject working perfectly with role-based permissions (Admin, Commercial Approver, Sales Manager). Status validation ensures only Unapproved quotations can be rejected (Draft/Approved/Rejected properly blocked). ✅ AUDIT LOGGING: rejected_by and rejected_at fields populated correctly with user tracking. ✅ ERROR HANDLING: Invalid IDs return 404, status validation returns 400 with clear messages, unauthorized users get 403 permission errors. ✅ EXISTING APPROVE ENDPOINT: Still works correctly, no regressions detected. ✅ DATA INTEGRITY: Status changes persist correctly, quotations move from Unapproved to Rejected status as expected. Backend quotation rejection functionality is PRODUCTION READY."
     implemented: true
     working: true
     file: "/app/backend/server.py"
