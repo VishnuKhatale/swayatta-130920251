@@ -250,12 +250,16 @@ const DashboardLayout = ({ children }) => {
         { name: 'Partners', path: '/partners', icon: Handshake },
         { name: 'Companies', path: '/companies', icon: Building2 },
         { name: 'Leads', path: '/leads', icon: Target },
-        { name: 'Opportunities', path: '/opportunities', icon: TrendingUp },
-        { name: 'Enhanced Opportunities', path: '/enhanced-opportunities', icon: TrendingUp },
+        { name: 'Opportunities', path: '/enhanced-opportunities', icon: TrendingUp },
         { name: 'Quotations', path: '/quotations', icon: FileText },
-        { name: 'Service Delivery', path: '/service-delivery', icon: Truck },
         { name: 'Master Data', path: '/master-data', icon: Settings2 }
       ]
+    },
+    {
+      name: 'Service Delivery',
+      path: '/service-delivery',
+      icon: Truck,
+      type: 'single'
     },
     {
       name: 'Activity Logs',
