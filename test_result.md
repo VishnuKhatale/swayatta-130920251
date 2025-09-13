@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Comprehensive Create User Form Testing - Bug Investigation: Users cannot type in Create New User form fields"
+user_problem_statement: "L4 Quotation Approval Buttons Fix - Admin, Commercial Approver, and Sales Manager cannot see Approve/Reject buttons for quotations in L4 Enhanced Opportunity stage"
 
 backend:
   - task: "🎯 Opportunity Management System Phase 1 Backend APIs - COMPREHENSIVE TESTING"
