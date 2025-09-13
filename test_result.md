@@ -800,21 +800,26 @@ frontend:
 
 frontend:
   - task: "🎯 L4 Quotation Approval Buttons Fix - Role-based Visibility"
-    implemented: false
+    implemented: true
     working: "NA"
     file: "/app/frontend/src/components/OpportunityManagement.js"
     stuck_count: 0
     priority: "high"
     needs_retesting: true
     implementation_details:
-      - "Fix missing XCircle import from lucide-react"
-      - "Implement missing rejectQuotation function for quotation rejection"
-      - "Ensure canAccessRoleGatedField() works properly for Admin, Commercial Approver, Sales Manager roles"
+      - "✅ Fixed missing XCircle import from lucide-react"
+      - "✅ Implemented missing rejectQuotation function for quotation rejection"
+      - "✅ Added backend POST /api/quotations/{quotation_id}/reject endpoint with role-based permissions"
+      - "✅ Updated Quotation model to support 'Rejected' status and added rejected_by/rejected_at fields"
+      - "✅ Ensure canAccessRoleGatedField() works properly for Admin, Commercial Approver, Sales Manager roles"
       - "Verify Approve/Reject buttons visibility in L4 Enhanced Opportunity stage"
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Issue identified: Missing XCircle import, missing rejectQuotation function. The canAccessRoleGatedField() function appears correct but needs testing."
+      - working: "NA"
+        agent: "main"
+        comment: "FIXES IMPLEMENTED: 1) Added XCircle import to lucide-react imports 2) Implemented rejectQuotation function in frontend with confirmation dialog and API call 3) Added backend reject endpoint with role-based permissions (Admin, Commercial Approver, Sales Manager) 4) Updated Quotation model to support 'Rejected' status and added rejected_by/rejected_at audit fields. Ready for testing."
 
 metadata:
   created_by: "main_agent"
