@@ -25,7 +25,8 @@ import {
   Plus,
   Eye,
   Upload,
-  Trash2
+  Trash2,
+  XCircle
 } from 'lucide-react';
 import axios from 'axios';
 
