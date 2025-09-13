@@ -6359,7 +6359,7 @@ async def delete_lead(lead_id: str, current_user: User = Depends(get_current_use
 @api_router.put("/leads/{lead_id}/approve", response_model=APIResponse)
 @require_permission("/leads", "edit")
 async def approve_lead(lead_id: str, approval_data: dict, current_user: User = Depends(get_current_user)):
-    """Approve or reject a lead"""
+    """Approve or reject a lead - auto-creates opportunity when approved"""
     try:
         # Check if lead exists
         existing_lead = await db.leads.find_one({"id": lead_id, "is_deleted": False})
@@ -6383,10 +6383,118 @@ async def approve_lead(lead_id: str, approval_data: dict, current_user: User = D
         
         await db.leads.update_one({"id": lead_id}, {"$set": update_data})
         
-        # Log activity
+        # Auto-create opportunity if lead is approved
+        opportunity_id = None
+        if approval_status == "approved":
+            try:
+                # Check if opportunity already exists for this lead
+                existing_opp = await db.opportunities.find_one({"lead_id": lead_id, "is_deleted": False})
+                
+                if not existing_opp:
+                    # Generate Opportunity ID and SR Number
+                    opp_id = await generate_opportunity_id()
+                    sr_no = await get_next_sr_no()
+                    
+                    # Determine opportunity type based on lead subtype
+                    lead_subtype = await db.lead_subtype_master.find_one({
+                        "id": existing_lead.get("lead_subtype_id"),
+                        "is_deleted": False
+                    })
+                    
+                    opportunity_type = "Non-Tender"
+                    if lead_subtype and lead_subtype.get("lead_subtype_name") in ["Tender", "Pretender"]:
+                        opportunity_type = "Tender"
+                    
+                    # Get initial stage for this opportunity type
+                    initial_stage = await db.opportunity_stages.find_one({
+                        "opportunity_type": opportunity_type,
+                        "sequence_order": 1,
+                        "is_deleted": False
+                    })
+                    
+                    if not initial_stage:
+                        # Create default stages if they don't exist
+                        await initialize_opportunity_stages()
+                        initial_stage = await db.opportunity_stages.find_one({
+                            "opportunity_type": opportunity_type,
+                            "sequence_order": 1,
+                            "is_deleted": False
+                        })
+                    
+                    # Create opportunity from approved lead
+                    opportunity_data = Opportunity(
+                        opportunity_id=opp_id,
+                        sr_no=sr_no,
+                        opportunity_title=existing_lead.get("project_title", "Opportunity from Approved Lead"),
+                        company_id=existing_lead.get("company_id"),
+                        current_stage_id=initial_stage["id"] if initial_stage else None,
+                        opportunity_owner_id=existing_lead.get("assigned_to_user_id"),
+                        opportunity_type=opportunity_type,
+                        lead_id=lead_id,
+                        project_title=existing_lead.get("project_title"),
+                        project_description=existing_lead.get("project_description"),
+                        project_start_date=existing_lead.get("project_start_date"),
+                        project_end_date=existing_lead.get("project_end_date"),
+                        expected_revenue=existing_lead.get("expected_revenue"),
+                        revenue_currency_id=existing_lead.get("revenue_currency_id"),
+                        lead_source_id=existing_lead.get("lead_source_id"),
+                        decision_maker_percentage=existing_lead.get("decision_maker_percentage"),
+                        auto_converted=True,
+                        auto_conversion_reason="Auto-converted immediately upon lead approval",
+                        created_by=current_user.id,
+                        updated_by=current_user.id
+                    )
+                    
+                    # Insert opportunity
+                    await db.opportunities.insert_one(opportunity_data.dict())
+                    opportunity_id = opp_id
+                    
+                    # Create stage history entry
+                    if initial_stage:
+                        stage_history = OpportunityStageHistory(
+                            opportunity_id=opportunity_data.id,
+                            to_stage_id=initial_stage["id"],
+                            stage_name=initial_stage["stage_name"],
+                            transitioned_by=current_user.id
+                        )
+                        await db.opportunity_stage_history.insert_one(stage_history.dict())
+                    
+                    # Update lead with opportunity reference
+                    await db.leads.update_one(
+                        {"id": lead_id},
+                        {"$set": {
+                            "notes": f"{existing_lead.get('notes', '')} [Auto-converted to Opportunity {opp_id}]".strip(),
+                            "updated_by": current_user.id,
+                            "updated_at": datetime.now(timezone.utc)
+                        }}
+                    )
+                    
+                    # Log activity for opportunity creation
+                    await log_activity(ActivityLog(
+                        user_id=current_user.id, 
+                        action=f"Auto-created opportunity {opp_id} from approved lead: {existing_lead.get('project_title', lead_id)}"
+                    ))
+                else:
+                    opportunity_id = existing_opp.get("opportunity_id")
+                    
+            except Exception as opp_error:
+                # Log the error but don't fail the lead approval
+                await log_activity(ActivityLog(
+                    user_id=current_user.id, 
+                    action=f"Failed to auto-create opportunity from approved lead {lead_id}: {str(opp_error)}"
+                ))
+        
+        # Log lead approval activity
         await log_activity(ActivityLog(user_id=current_user.id, action=f"{approval_status.title()} lead: {existing_lead.get('project_title', lead_id)}"))
         
-        return APIResponse(success=True, message=f"Lead {approval_status} successfully")
+        response_message = f"Lead {approval_status} successfully"
+        response_data = {"lead_id": lead_id}
+        
+        if opportunity_id:
+            response_message += f". Opportunity {opportunity_id} created automatically."
+            response_data["opportunity_id"] = opportunity_id
+        
+        return APIResponse(success=True, message=response_message, data=response_data)
         
     except HTTPException:
         raise
