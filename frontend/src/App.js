@@ -17,7 +17,7 @@ import OpportunityManagement from './components/OpportunityManagement';
 import EnhancedOpportunityManagement from './components/EnhancedOpportunityManagement';
 import QuotationManagement from './components/QuotationManagement';
 import ServiceDelivery from './components/ServiceDelivery';
-import ServiceDeliveryDetails from './components/ServiceDeliveryDetails';
+import ProjectProductManagement from './components/ProjectProductManagement';
 import QuotationListing from './components/QuotationListing';
 import TestInput from './components/TestInput';
 
