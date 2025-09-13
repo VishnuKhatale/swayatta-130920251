@@ -10837,13 +10837,31 @@ async def get_project_details(project_id: str, current_user: User = Depends(get_
                 "is_deleted": False
             })
         
+        # Clean up ObjectId fields for serialization
+        def clean_document(doc):
+            if doc is None:
+                return None
+            cleaned = {}
+            for key, value in doc.items():
+                if key == "_id":
+                    continue  # Skip MongoDB _id field
+                elif isinstance(value, ObjectId):
+                    cleaned[key] = str(value)
+                elif isinstance(value, list):
+                    cleaned[key] = [clean_document(item) if isinstance(item, dict) else item for item in value]
+                elif isinstance(value, dict):
+                    cleaned[key] = clean_document(value)
+                else:
+                    cleaned[key] = value
+            return cleaned
+
         # Build response
         project_details = {
-            "project": project,
-            "opportunity": opportunity,
-            "quotation": approved_quotation,
+            "project": clean_document(project),
+            "opportunity": clean_document(opportunity),
+            "quotation": clean_document(approved_quotation),
             "products": quotation_products,
-            "company": company,
+            "company": clean_document(company),
             "total_products": len(quotation_products),
             "delivered_products": len([p for p in quotation_products if p["delivery_status"] == "Delivered"]),
             "in_transit_products": len([p for p in quotation_products if p["delivery_status"] == "In Transit"]),
