@@ -1303,14 +1303,27 @@ const OpportunityManagement = () => {
                                     {quotation.status === 'Approved' ? 'View' : 'Edit'}
                                   </Button>
                                   
-                                  {quotation.status === 'Unapproved' && userPermissions.can_approve && (
-                                    <Button
-                                      size="sm"
-                                      onClick={() => approveQuotation(quotation.id)}
-                                      className="bg-green-600 hover:bg-green-700 text-white"
-                                    >
-                                      Approve
-                                    </Button>
+                                  {/* Approve and Reject buttons for Admin, Commercial Approver, Sales Manager */}
+                                  {quotation.status === 'Unapproved' && canAccessRoleGatedField() && (
+                                    <>
+                                      <Button
+                                        size="sm"
+                                        onClick={() => approveQuotation(quotation.id)}
+                                        className="bg-green-600 hover:bg-green-700 text-white"
+                                      >
+                                        <CheckCircle className="h-4 w-4 mr-1" />
+                                        Approve
+                                      </Button>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => rejectQuotation(quotation.id)}
+                                        className="text-red-600 hover:text-red-700 border-red-300"
+                                      >
+                                        <XCircle className="h-4 w-4 mr-1" />
+                                        Reject
+                                      </Button>
+                                    </>
                                   )}
                                   
                                   {['Draft', 'Unapproved'].includes(quotation.status) && (
