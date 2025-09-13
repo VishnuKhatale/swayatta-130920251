@@ -433,13 +433,27 @@ backend:
     needs_retesting: false
     implementation_details:
       - "✅ Enhanced PUT /api/leads/{lead_id}/approve endpoint for immediate auto-conversion"
-      - "✅ Automatic opportunity creation when lead status changes to 'approved'"
+      - "✅ Automatic opportunity creation when lead status changes to 'approved'"  
       - "✅ Proper data mapping from approved lead to new opportunity"
       - "✅ Opportunity type determination based on lead subtype (Tender/Non-Tender)"
       - "✅ Initial stage assignment and stage history creation"
       - "✅ Lead notes update with opportunity reference"
       - "✅ Comprehensive error handling and activity logging"
       - "✅ Prevents duplicate opportunity creation for same lead"
+    endpoints_tested:
+      - "PUT /api/leads/{lead_id}/approve - Lead approval with auto-conversion (✅ Working)"
+      - "POST /api/leads - Create test leads for conversion testing (✅ Working)"
+      - "GET /api/opportunities - Verify auto-created opportunities (✅ Working)"
+      - "GET /api/leads - Lead data retrieval and mapping (✅ Working)"
+    business_logic_validated:
+      - "Tender/Pretender leads create 'Tender' type opportunities"
+      - "Non-Tender leads create 'Non-Tender' type opportunities"
+      - "Opportunity ID format: OPP-XXXXXXX with auto-increment SR numbers"
+      - "Complete data mapping: title, company, owner, revenue, dates, etc."
+      - "Initial stage assignment (L1 for respective opportunity types)"
+      - "Stage history creation with proper audit trails"
+      - "Duplicate prevention for already approved leads"
+      - "Lead rejection doesn't create opportunities"
     status_history:
       - working: "NA"
         agent: "main"
