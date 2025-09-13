@@ -10994,10 +10994,24 @@ async def get_product_delivery_logs(project_id: str, product_id: str, current_us
             "is_deleted": False
         }).sort([("timestamp", -1)]).to_list(length=None)
         
+        # Clean up ObjectId fields for serialization
+        def clean_log(log):
+            cleaned = {}
+            for key, value in log.items():
+                if key == "_id":
+                    continue  # Skip MongoDB _id field
+                elif isinstance(value, ObjectId):
+                    cleaned[key] = str(value)
+                else:
+                    cleaned[key] = value
+            return cleaned
+        
+        cleaned_logs = [clean_log(log) for log in logs]
+        
         return APIResponse(
             success=True, 
             message="Product delivery logs retrieved successfully", 
-            data=logs
+            data=cleaned_logs
         )
         
     except HTTPException:
