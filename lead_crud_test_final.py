@@ -6,7 +6,7 @@ import json
 from datetime import datetime, timedelta
 
 class FinalLeadTester:
-    def __init__(self, base_url="https://unified-opp-mgmt.preview.emergentagent.com"):
+    def __init__(self, base_url="https://service-delivery-hub.preview.emergentagent.com"):
         self.base_url = base_url
         self.api_url = f"{base_url}/api"
         self.token = None
@@ -320,7 +320,7 @@ def main():
     
     # Initialize database
     print("Initializing database...")
-    init_response = requests.post('https://unified-opp-mgmt.preview.emergentagent.com/api/init-db')
+    init_response = requests.post('https://service-delivery-hub.preview.emergentagent.com/api/init-db')
     if init_response.status_code == 200:
         print("✅ Database initialized successfully")
     else:
