@@ -530,7 +530,7 @@ class Quotation(BaseModel):
     currency_id: str = "1"
     validity_date: str  # Date in YYYY-MM-DD format
     quotation_date: str = Field(default_factory=lambda: datetime.now(timezone.utc).strftime('%Y-%m-%d'))
-    status: str = "Draft"  # Draft, Unapproved, Approved
+    status: str = "Draft"  # Draft, Unapproved, Approved, Rejected
     overall_discount_type: Optional[str] = None  # percentage, absolute
     overall_discount_value: float = 0.0
     discount_reason: Optional[str] = None
