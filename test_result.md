@@ -834,7 +834,7 @@ test_plan:
   test_all: false
 ## agent_communication:
      -agent: "main"
-     -message: "Starting L4 Quotation Approval Buttons Fix. Issues found: 1) Missing XCircle import from lucide-react 2) Missing rejectQuotation function implementation 3) Need to verify canAccessRoleGatedField() works properly for role-based button visibility. Implementing fixes now."
+     -message: "L4 Quotation Approval Buttons Fix COMPLETED. Fixes implemented: 1) Added XCircle import to lucide-react 2) Implemented rejectQuotation function with confirmation dialog 3) Added backend POST /api/quotations/{quotation_id}/reject endpoint with role-based permissions 4) Updated Quotation model to support 'Rejected' status and added rejected_by/rejected_at audit fields. The canAccessRoleGatedField() function was already correctly implemented. Ready for backend testing to verify the new reject endpoint works properly."
 
 agent_communication:
     -agent: "testing"
