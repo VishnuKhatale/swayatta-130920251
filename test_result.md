@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "L4 Quotation Approval Buttons Fix - Admin, Commercial Approver, and Sales Manager cannot see Approve/Reject buttons for quotations in L4 Enhanced Opportunity stage"
+user_problem_statement: "Critical CRM Workflow Issues: 1) Lead to Opportunity auto-conversion after approval not working 2) Service Delivery product management missing delivery tracking details 3) Admin quotation approval buttons missing in 'Opportunities' submenu L4 stage"
 
 backend:
   - task: "🎯 Opportunity Management System Phase 1 Backend APIs - COMPREHENSIVE TESTING"
