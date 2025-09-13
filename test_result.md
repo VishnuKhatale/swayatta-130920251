@@ -875,12 +875,14 @@ metadata:
 
 test_plan:
   current_focus:
-    - "🎯 L4 Quotation Approval Buttons Fix - Role-based Visibility"
+    - "🎯 Issue 1: Lead to Opportunity Auto-Conversion After Approval"
   stuck_tasks: []
   test_all: false
+  test_priority: "high_first"
+
 ## agent_communication:
      -agent: "main"
-     -message: "L4 Quotation Approval Buttons Fix COMPLETED. Fixes implemented: 1) Added XCircle import to lucide-react 2) Implemented rejectQuotation function with confirmation dialog 3) Added backend POST /api/quotations/{quotation_id}/reject endpoint with role-based permissions 4) Updated Quotation model to support 'Rejected' status and added rejected_by/rejected_at audit fields. The canAccessRoleGatedField() function was already correctly implemented. Ready for backend testing to verify the new reject endpoint works properly."
+     -message: "Priority order confirmed: Issue 1 (Lead→Opportunity conversion), Issue 2 (Service Delivery product tracking), Issue 3 (Quotation approval in 'Opportunities' submenu). Starting with Issue 1: investigating current lead approval process and implementing auto-conversion to opportunities workflow."
 
 agent_communication:
     -agent: "testing"
