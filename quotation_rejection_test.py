@@ -336,53 +336,72 @@ class QuotationRejectionTester:
         # ===== 5. TEST EXISTING APPROVE ENDPOINT STILL WORKS =====
         print("\n🔍 Testing existing approve endpoint still works...")
         
+        # Get opportunities and pricing lists for approval test
+        opportunities_success2, opportunities_response2 = self.run_test(
+            "GET /api/opportunities - For Approval Test",
+            "GET",
+            "opportunities",
+            200
+        )
+        
+        pricing_lists_success2, pricing_lists_response2 = self.run_test(
+            "GET /api/pricing-lists - For Approval Test",
+            "GET",
+            "pricing-lists",
+            200
+        )
+        
         # Create another test quotation for approval testing
-        if opportunities and pricing_lists:
-            approve_quotation_data = {
-                "opportunity_id": opportunities[0].get('id'),
-                "customer_id": opportunities[0].get('company_id', 'test-customer-id'),
-                "customer_name": opportunities[0].get('company_name', 'Test Customer Corp'),
-                "customer_contact_email": "approve@customer.com",
-                "pricing_list_id": pricing_lists[0]['id'],
-                "validity_date": "2024-12-31",
-                "overall_discount_type": "percentage",
-                "overall_discount_value": 3.0,
-                "terms_and_conditions": "Test quotation for approval testing"
-            }
+        if opportunities_success2 and pricing_lists_success2:
+            opportunities = opportunities_response2.get('data', [])
+            pricing_lists = pricing_lists_response2.get('data', [])
             
-            success_create_approve, response_create_approve = self.run_test(
-                "POST /api/quotations - Create Quotation for Approval Test",
-                "POST",
-                "quotations",
-                200,
-                data=approve_quotation_data
-            )
-            
-            test_approve_id = None
-            if success_create_approve and response_create_approve.get('success'):
-                created_approve_quotation = response_create_approve.get('data', {})
-                test_approve_id = created_approve_quotation.get('id')
+            if opportunities and pricing_lists:
+                approve_quotation_data = {
+                    "opportunity_id": opportunities[0].get('id'),
+                    "customer_id": opportunities[0].get('company_id', 'test-customer-id'),
+                    "customer_name": opportunities[0].get('company_name', 'Test Customer Corp'),
+                    "customer_contact_email": "approve@customer.com",
+                    "pricing_list_id": pricing_lists[0]['id'],
+                    "validity_date": "2024-12-31",
+                    "overall_discount_type": "percentage",
+                    "overall_discount_value": 3.0,
+                    "terms_and_conditions": "Test quotation for approval testing"
+                }
                 
-                # Submit to make it Unapproved
-                success_submit_approve, response_submit_approve = self.run_test(
-                    "POST /api/quotations/{id}/submit - Submit for Approval Test",
+                success_create_approve, response_create_approve = self.run_test(
+                    "POST /api/quotations - Create Quotation for Approval Test",
                     "POST",
-                    f"quotations/{test_approve_id}/submit",
-                    200
+                    "quotations",
+                    200,
+                    data=approve_quotation_data
                 )
                 
-                # Test approval endpoint
-                if success_submit_approve:
-                    success_approve, response_approve = self.run_test(
-                        "POST /api/quotations/{id}/approve - Test Approve Endpoint",
+                test_approve_id = None
+                if success_create_approve and response_create_approve.get('success'):
+                    created_approve_quotation = response_create_approve.get('data', {})
+                    test_approve_id = created_approve_quotation.get('id')
+                    
+                    # Submit to make it Unapproved
+                    success_submit_approve, response_submit_approve = self.run_test(
+                        "POST /api/quotations/{id}/submit - Submit for Approval Test",
                         "POST",
-                        f"quotations/{test_approve_id}/approve",
+                        f"quotations/{test_approve_id}/submit",
                         200
                     )
-                    test_results.append(success_approve)
                     
-                    if success_approve:
-                        print("   ✅ Existing approve endpoint still working correctly")
+                    # Test approval endpoint
+                    if success_submit_approve:
+                        success_approve, response_approve = self.run_test(
+                            "POST /api/quotations/{id}/approve - Test Approve Endpoint",
+                            "POST",
+                            f"quotations/{test_approve_id}/approve",
+                            200
+                        )
+                        test_results.append(success_approve)
+                        
+                        if success_approve:
+                            print("   ✅ Existing approve endpoint still working correctly")
         
         # ===== 6. TEST AUDIT LOGGING =====
         print("\n🔍 Testing audit log creation for rejection...")
