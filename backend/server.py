@@ -10754,6 +10754,239 @@ async def get_active_projects(current_user: User = Depends(get_current_user)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to retrieve active projects: {str(e)}")
 
+# Individual Project Management APIs
+@api_router.get("/service-delivery/projects/{project_id}", response_model=APIResponse)
+@require_permission("/service-delivery", "view")
+async def get_project_details(project_id: str, current_user: User = Depends(get_current_user)):
+    """Get individual project details with product delivery tracking"""
+    try:
+        # Get project/SDR details
+        project = await db.service_delivery_requests.find_one({"id": project_id, "is_deleted": False})
+        if not project:
+            raise HTTPException(status_code=404, detail="Project not found")
+        
+        # Get associated opportunity
+        opportunity = None
+        if project.get("opportunity_id"):
+            opportunity = await db.opportunities.find_one({
+                "opportunity_id": project["opportunity_id"], 
+                "is_deleted": False
+            })
+        
+        # Get approved quotation for this opportunity
+        approved_quotation = None
+        quotation_products = []
+        if opportunity:
+            approved_quotation = await db.quotations.find_one({
+                "opportunity_id": opportunity["opportunity_id"],
+                "status": "Approved",
+                "is_deleted": False
+            })
+            
+            if approved_quotation:
+                # Extract products from quotation phases
+                quotation_products = []
+                if approved_quotation.get("phases"):
+                    for phase in approved_quotation["phases"]:
+                        if phase.get("groups"):
+                            for group in phase["groups"]:
+                                if group.get("items"):
+                                    for item in group["items"]:
+                                        quotation_products.append({
+                                            "id": str(uuid.uuid4()),
+                                            "phase_name": phase.get("phase_name"),
+                                            "group_name": group.get("group_name"),
+                                            "product_name": item.get("product_name"),
+                                            "quantity": item.get("quantity", 1),
+                                            "unit_price": item.get("unit_price", 0),
+                                            "total_price": item.get("total_price", 0),
+                                            "delivery_status": "Pending",  # Default status
+                                            "delivery_notes": "",
+                                            "last_updated": None,
+                                            "updated_by": None
+                                        })
+        
+        # Get existing product delivery records if any
+        existing_deliveries = await db.product_deliveries.find({
+            "project_id": project_id,
+            "is_deleted": False
+        }).to_list(length=None)
+        
+        # Merge quotation products with existing delivery records
+        delivery_records = {}
+        for delivery in existing_deliveries:
+            delivery_records[delivery["product_id"]] = delivery
+        
+        # Update products with delivery status
+        for product in quotation_products:
+            if product["id"] in delivery_records:
+                delivery_record = delivery_records[product["id"]]
+                product.update({
+                    "delivery_status": delivery_record.get("delivery_status", "Pending"),
+                    "delivery_notes": delivery_record.get("delivery_notes", ""),
+                    "last_updated": delivery_record.get("updated_at"),
+                    "updated_by": delivery_record.get("updated_by"),
+                    "delivered_quantity": delivery_record.get("delivered_quantity", 0)
+                })
+        
+        # Get company details
+        company = None
+        if opportunity and opportunity.get("company_id"):
+            company = await db.companies.find_one({
+                "company_id": opportunity["company_id"],
+                "is_deleted": False
+            })
+        
+        # Build response
+        project_details = {
+            "project": project,
+            "opportunity": opportunity,
+            "quotation": approved_quotation,
+            "products": quotation_products,
+            "company": company,
+            "total_products": len(quotation_products),
+            "delivered_products": len([p for p in quotation_products if p["delivery_status"] == "Delivered"]),
+            "in_transit_products": len([p for p in quotation_products if p["delivery_status"] == "In Transit"]),
+            "pending_products": len([p for p in quotation_products if p["delivery_status"] == "Pending"])
+        }
+        
+        return APIResponse(success=True, message="Project details retrieved successfully", data=project_details)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve project details: {str(e)}")
+
+@api_router.put("/service-delivery/projects/{project_id}/products/{product_id}/status", response_model=APIResponse)
+@require_permission("/service-delivery", "edit")
+async def update_product_delivery_status(
+    project_id: str, 
+    product_id: str, 
+    status_data: dict, 
+    current_user: User = Depends(get_current_user)
+):
+    """Update product delivery status"""
+    try:
+        # Validate status
+        valid_statuses = ["Pending", "In Transit", "Delivered"]
+        new_status = status_data.get("delivery_status")
+        if new_status not in valid_statuses:
+            raise HTTPException(status_code=400, detail=f"Invalid status. Must be one of: {', '.join(valid_statuses)}")
+        
+        # Check if project exists
+        project = await db.service_delivery_requests.find_one({"id": project_id, "is_deleted": False})
+        if not project:
+            raise HTTPException(status_code=404, detail="Project not found")
+        
+        # Check user permissions for delivery management
+        user_doc = await db.users.find_one({"id": current_user.id, "is_deleted": False})
+        if not user_doc:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        role = await db.roles.find_one({"id": user_doc["role_id"], "is_deleted": False})
+        if not role:
+            raise HTTPException(status_code=404, detail="User role not found")
+        
+        # Check if user has delivery management permissions
+        delivery_roles = ["Admin", "Delivery Manager", "Service Delivery Manager", "Delivery Person"]
+        if role["name"] not in delivery_roles:
+            raise HTTPException(
+                status_code=403, 
+                detail=f"Insufficient permissions. Only {', '.join(delivery_roles)} can update delivery status"
+            )
+        
+        # Get or create product delivery record
+        existing_delivery = await db.product_deliveries.find_one({
+            "project_id": project_id,
+            "product_id": product_id,
+            "is_deleted": False
+        })
+        
+        delivery_data = {
+            "delivery_status": new_status,
+            "delivery_notes": status_data.get("delivery_notes", ""),
+            "delivered_quantity": status_data.get("delivered_quantity", 0),
+            "updated_by": current_user.id,
+            "updated_at": datetime.now(timezone.utc)
+        }
+        
+        if existing_delivery:
+            # Update existing record
+            await db.product_deliveries.update_one(
+                {"id": existing_delivery["id"]},
+                {"$set": delivery_data}
+            )
+            delivery_id = existing_delivery["id"]
+        else:
+            # Create new delivery record
+            delivery_record = {
+                "id": str(uuid.uuid4()),
+                "project_id": project_id,
+                "product_id": product_id,
+                "created_by": current_user.id,
+                "created_at": datetime.now(timezone.utc),
+                "is_deleted": False,
+                **delivery_data
+            }
+            await db.product_deliveries.insert_one(delivery_record)
+            delivery_id = delivery_record["id"]
+        
+        # Create activity log entry
+        activity_log = {
+            "id": str(uuid.uuid4()),
+            "project_id": project_id,
+            "product_id": product_id,
+            "activity_type": "status_change",
+            "activity_description": f"Delivery status changed to '{new_status}'",
+            "previous_status": existing_delivery.get("delivery_status", "Pending") if existing_delivery else "Pending",
+            "new_status": new_status,
+            "notes": status_data.get("delivery_notes", ""),
+            "user_id": current_user.id,
+            "user_name": f"{user_doc.get('first_name', '')} {user_doc.get('last_name', '')}".strip(),
+            "timestamp": datetime.now(timezone.utc),
+            "is_deleted": False
+        }
+        await db.product_delivery_logs.insert_one(activity_log)
+        
+        return APIResponse(
+            success=True, 
+            message=f"Product delivery status updated to '{new_status}'",
+            data={"delivery_id": delivery_id, "activity_log_id": activity_log["id"]}
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update product delivery status: {str(e)}")
+
+@api_router.get("/service-delivery/projects/{project_id}/products/{product_id}/logs", response_model=APIResponse)
+@require_permission("/service-delivery", "view")
+async def get_product_delivery_logs(project_id: str, product_id: str, current_user: User = Depends(get_current_user)):
+    """Get activity logs for a specific product delivery"""
+    try:
+        # Verify project exists
+        project = await db.service_delivery_requests.find_one({"id": project_id, "is_deleted": False})
+        if not project:
+            raise HTTPException(status_code=404, detail="Project not found")
+        
+        # Get activity logs for the product
+        logs = await db.product_delivery_logs.find({
+            "project_id": project_id,
+            "product_id": product_id,
+            "is_deleted": False
+        }).sort([("timestamp", -1)]).to_list(length=None)
+        
+        return APIResponse(
+            success=True, 
+            message="Product delivery logs retrieved successfully", 
+            data=logs
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve product delivery logs: {str(e)}")
+
 # 3. Completed Projects APIs
 @api_router.get("/service-delivery/completed", response_model=APIResponse)
 @require_permission("/service-delivery", "view")
